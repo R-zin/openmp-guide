@@ -3,22 +3,17 @@
 import React, { useState } from 'react';
 
 export function AmdahlCalculator() {
-  const [parallelFraction, setParallelFraction] = useState<number>(0.90); // 90%
+  const [parallelFraction, setParallelFraction] = useState<number>(0.90);
   const [cores, setCores] = useState<number>(16);
   const [showGustafson, setShowGustafson] = useState<boolean>(true);
 
-  // Amdahl calculation
-  // S = 1 / ((1 - P) + P / N)
   const serialFraction = 1 - parallelFraction;
   const amdahlSpeedup = 1 / (serialFraction + parallelFraction / cores);
   const maxPossibleSpeedup = 1 / serialFraction;
   const parallelEfficiency = (amdahlSpeedup / cores) * 100;
 
-  // Gustafson calculation
-  // S = (1 - P) + P * N
   const gustafsonSpeedup = serialFraction + parallelFraction * cores;
 
-  // Generate SVG curve points for N = 1 to 64
   const maxN = 64;
   const chartWidth = 500;
   const chartHeight = 220;
@@ -27,10 +22,8 @@ export function AmdahlCalculator() {
   const innerW = chartWidth - padding.left - padding.right;
   const innerH = chartHeight - padding.top - padding.bottom;
 
-  // Maximum Y for chart scaling
   const chartMaxY = Math.max(maxPossibleSpeedup * 1.15, showGustafson ? 40 : 20);
 
-  // Compute points
   const pointsAmdahl: { x: number; y: number; n: number; s: number }[] = [];
   const pointsGustafson: { x: number; y: number; n: number; s: number }[] = [];
 
@@ -49,35 +42,36 @@ export function AmdahlCalculator() {
   const pathAmdahl = pointsAmdahl.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   const pathGustafson = pointsGustafson.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
 
-  // Current selected point coordinates
   const currentPx = padding.left + ((cores - 1) / (maxN - 1)) * innerW;
   const currentPy = padding.top + innerH - (amdahlSpeedup / chartMaxY) * innerH;
 
-  // Asymptote Y line
   const asymptoteY = padding.top + innerH - (maxPossibleSpeedup / chartMaxY) * innerH;
 
   return (
-    <div className="my-8 border border-[#000000] dark:border-[#FFFFFF] p-5 bg-[#FFFFFF] dark:bg-[#000000] font-mono">
-      <div className="flex flex-wrap items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3 mb-4">
+    <div className="my-8 apple-card p-6 sm:p-8 rounded-3xl font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-black/[0.06] dark:border-white/[0.08]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF]">
-            AMDAHL&apos;S LAW CALCULATOR & SCALING CURVES
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+            Interactive Calculator // Performance Scaling
           </span>
-          <p className="text-xs text-[#737373] mt-1 font-sans">
-            Evaluate parallel speedup, diminishing returns, and the asymptotic serial bottleneck.
+          <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight mt-0.5">
+            Amdahl&apos;s Law & Scaling Limits
+          </h3>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            Evaluate parallel speedup, diminishing returns, and the serial execution bottleneck.
           </p>
         </div>
-        <span className="text-xs px-2 py-0.5 border border-[#000000] dark:border-[#FFFFFF] uppercase">
-          FORMULA: 1 / ((1 - P) + P/N)
+        <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+          S = 1 / ((1 - P) + P/N)
         </span>
       </div>
 
       {/* Sliders & Controls */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6 text-xs">
         <div>
-          <div className="flex justify-between text-[#737373] mb-1">
-            <span>PARALLEL PORTION (P):</span>
-            <span className="text-[#000000] dark:text-[#FFFFFF] font-bold">
+          <div className="flex justify-between text-neutral-500 mb-1.5 font-medium">
+            <span className="uppercase text-[10px] tracking-wider">Parallel Fraction (P):</span>
+            <span className="text-neutral-900 dark:text-white font-bold font-mono">
               {(parallelFraction * 100).toFixed(1)}%
             </span>
           </div>
@@ -88,17 +82,17 @@ export function AmdahlCalculator() {
             step="0.01"
             value={parallelFraction}
             onChange={(e) => setParallelFraction(parseFloat(e.target.value))}
-            className="w-full accent-black dark:accent-white"
+            className="w-full accent-blue-600 cursor-pointer"
           />
-          <div className="text-[10px] text-[#737373] mt-1">
-            Serial Bottleneck (1 - P): {(serialFraction * 100).toFixed(1)}%
+          <div className="text-[10px] text-neutral-400 mt-1">
+            Serial Bottleneck: {(serialFraction * 100).toFixed(1)}%
           </div>
         </div>
 
         <div>
-          <div className="flex justify-between text-[#737373] mb-1">
-            <span>PROCESSOR CORES (N):</span>
-            <span className="text-[#000000] dark:text-[#FFFFFF] font-bold">
+          <div className="flex justify-between text-neutral-500 mb-1.5 font-medium">
+            <span className="uppercase text-[10px] tracking-wider">Cores (N):</span>
+            <span className="text-neutral-900 dark:text-white font-bold font-mono">
               {cores}
             </span>
           </div>
@@ -109,65 +103,66 @@ export function AmdahlCalculator() {
             step="1"
             value={cores}
             onChange={(e) => setCores(parseInt(e.target.value, 10))}
-            className="w-full accent-black dark:accent-white"
+            className="w-full accent-blue-600 cursor-pointer"
           />
-          <div className="text-[10px] text-[#737373] mt-1">
+          <div className="text-[10px] text-neutral-400 mt-1">
             Range: 1 to 64 cores
           </div>
         </div>
 
         <div className="flex flex-col justify-end">
-          <label className="flex items-center space-x-2 text-xs text-[#000000] dark:text-[#FFFFFF] cursor-pointer mb-2">
+          <label className="flex items-center space-x-2 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer p-2 rounded-xl hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
             <input
               type="checkbox"
               checked={showGustafson}
               onChange={(e) => setShowGustafson(e.target.checked)}
-              className="accent-black dark:accent-white"
+              className="accent-blue-600 rounded"
             />
-            <span className="uppercase text-[11px]">COMPARE GUSTAFSON&apos;S LAW</span>
+            <span className="font-medium text-xs">Compare Gustafson Weak Scaling</span>
           </label>
         </div>
       </div>
 
       {/* Metric Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-          <div className="text-[10px] text-[#737373] uppercase">AMDAHL SPEEDUP</div>
-          <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
+        <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+          <div className="text-[10px] text-neutral-400 uppercase font-semibold">Amdahl Speedup</div>
+          <div className="text-xl font-bold mt-1 text-blue-600 dark:text-blue-400 font-mono">
             {amdahlSpeedup.toFixed(2)}x
           </div>
         </div>
-        <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-          <div className="text-[10px] text-[#737373] uppercase">ASYMPTOTIC LIMIT (N&rarr;&infin;)</div>
-          <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
+        <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+          <div className="text-[10px] text-neutral-400 uppercase font-semibold">Asymptotic Limit (N→∞)</div>
+          <div className="text-xl font-bold mt-1 text-neutral-900 dark:text-white font-mono">
             {maxPossibleSpeedup.toFixed(2)}x
           </div>
         </div>
-        <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-          <div className="text-[10px] text-[#737373] uppercase">PARALLEL EFFICIENCY</div>
-          <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
+        <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+          <div className="text-[10px] text-neutral-400 uppercase font-semibold">Efficiency</div>
+          <div className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400 font-mono">
             {parallelEfficiency.toFixed(1)}%
           </div>
         </div>
-        <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-          <div className="text-[10px] text-[#737373] uppercase">GUSTAFSON SCALED SPEEDUP</div>
-          <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
+        <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+          <div className="text-[10px] text-neutral-400 uppercase font-semibold">Gustafson Speedup</div>
+          <div className="text-xl font-bold mt-1 text-purple-600 dark:text-purple-400 font-mono">
             {gustafsonSpeedup.toFixed(2)}x
           </div>
         </div>
       </div>
 
-      {/* Minimalist Monochrome SVG Chart */}
-      <div className="border border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#080808] p-3">
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto text-[#000000] dark:text-[#FFFFFF]">
-          {/* Grid lines and axes */}
+      {/* Apple Curve Graph SVG */}
+      <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-neutral-900 p-4 shadow-inner">
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto">
+          {/* Subtle Axes */}
           <line
             x1={padding.left}
             y1={padding.top}
             x2={padding.left}
             y2={chartHeight - padding.bottom}
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1"
+            className="text-neutral-300 dark:text-neutral-700"
           />
           <line
             x1={padding.left}
@@ -175,10 +170,11 @@ export function AmdahlCalculator() {
             x2={chartWidth - padding.right}
             y2={chartHeight - padding.bottom}
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1"
+            className="text-neutral-300 dark:text-neutral-700"
           />
 
-          {/* Theoretical Asymptote Line */}
+          {/* Asymptote */}
           {asymptoteY >= padding.top && (
             <g>
               <line
@@ -186,34 +182,33 @@ export function AmdahlCalculator() {
                 y1={asymptoteY}
                 x2={chartWidth - padding.right}
                 y2={asymptoteY}
-                stroke="currentColor"
+                stroke="#FF9500"
                 strokeWidth="1"
                 strokeDasharray="4 4"
-                className="opacity-50"
+                className="opacity-70"
               />
               <text
                 x={chartWidth - padding.right}
                 y={asymptoteY - 4}
                 textAnchor="end"
                 fontSize="9"
-                fontFamily="monospace"
-                fill="currentColor"
-                className="opacity-75"
+                fontFamily="sans-serif"
+                fill="#FF9500"
               >
-                Max Limit = {maxPossibleSpeedup.toFixed(1)}x
+                Max Asymptote ({maxPossibleSpeedup.toFixed(1)}x)
               </text>
             </g>
           )}
 
-          {/* Gustafson Curve if enabled */}
+          {/* Gustafson Curve */}
           {showGustafson && (
             <path
               d={pathGustafson}
               fill="none"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeDasharray="2 2"
-              className="opacity-40"
+              stroke="#AF52DE"
+              strokeWidth="2.5"
+              strokeDasharray="5 3"
+              className="opacity-80"
             />
           )}
 
@@ -221,54 +216,70 @@ export function AmdahlCalculator() {
           <path
             d={pathAmdahl}
             fill="none"
-            stroke="currentColor"
+            stroke="#0071E3"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+
+          {/* Current selected point marker */}
+          <circle
+            cx={currentPx}
+            cy={currentPy}
+            r="5"
+            fill="#0071E3"
+            stroke="#FFFFFF"
             strokeWidth="2"
+            className="shadow-sm"
           />
 
-          {/* Current Selection Marker */}
-          <rect
-            x={currentPx - 4}
-            y={currentPy - 4}
-            width="8"
-            height="8"
-            fill="currentColor"
-          />
-
-          {/* X Axis labels */}
-          <text x={padding.left} y={chartHeight - 10} fontSize="10" fontFamily="monospace" fill="currentColor">
-            1
-          </text>
-          <text x={padding.left + innerW / 2} y={chartHeight - 10} fontSize="10" fontFamily="monospace" textAnchor="middle" fill="currentColor">
-            N = 32 Cores
-          </text>
-          <text x={chartWidth - padding.right} y={chartHeight - 10} fontSize="10" fontFamily="monospace" textAnchor="end" fill="currentColor">
-            64
+          {/* Labels */}
+          <text
+            x={currentPx}
+            y={Math.max(padding.top + 10, currentPy - 10)}
+            textAnchor="middle"
+            fontSize="10"
+            fontWeight="bold"
+            fill="#0071E3"
+            fontFamily="sans-serif"
+          >
+            {amdahlSpeedup.toFixed(2)}x @ {cores} cores
           </text>
 
-          {/* Y Axis labels */}
-          <text x={padding.left - 8} y={chartHeight - padding.bottom} fontSize="10" fontFamily="monospace" textAnchor="end" fill="currentColor">
-            1x
+          <text
+            x={padding.left}
+            y={chartHeight - 8}
+            fontSize="9"
+            fill="#8E8E93"
+            fontFamily="sans-serif"
+          >
+            N=1 core
           </text>
-          <text x={padding.left - 8} y={padding.top + 10} fontSize="10" fontFamily="monospace" textAnchor="end" fill="currentColor">
-            {chartMaxY.toFixed(0)}x
+          <text
+            x={chartWidth - padding.right}
+            y={chartHeight - 8}
+            textAnchor="end"
+            fontSize="9"
+            fill="#8E8E93"
+            fontFamily="sans-serif"
+          >
+            N=64 cores
           </text>
         </svg>
 
-        {/* Chart Legend */}
-        <div className="flex flex-wrap items-center justify-between text-[11px] text-[#737373] mt-2 pt-2 border-t border-[#E5E5E5] dark:border-[#262626]">
-          <div className="flex items-center space-x-4">
+        <div className="flex justify-between items-center text-[11px] text-neutral-400 pt-2 px-1">
+          <div className="flex items-center space-x-3">
             <span className="flex items-center space-x-1">
-              <span className="w-4 h-0.5 bg-[#000000] dark:bg-[#FFFFFF] inline-block" />
-              <span>Amdahl (Fixed Problem Size)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+              <span>Amdahl (Strong Scaling)</span>
             </span>
             {showGustafson && (
               <span className="flex items-center space-x-1">
-                <span className="w-4 h-0.5 border-t border-dashed border-[#000000] dark:border-[#FFFFFF] inline-block" />
-                <span>Gustafson (Scaled Problem Size)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                <span>Gustafson (Weak Scaling)</span>
               </span>
             )}
           </div>
-          <span>Point: ({cores} cores &rarr; {amdahlSpeedup.toFixed(2)}x)</span>
+          <span>Diminishing returns limit: 1 / (1 - P)</span>
         </div>
       </div>
     </div>

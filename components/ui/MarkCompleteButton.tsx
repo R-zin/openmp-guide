@@ -30,9 +30,9 @@ export function MarkCompleteButton({ slug }: MarkCompleteButtonProps) {
 
   if (!mounted) {
     return (
-      <div className="inline-flex items-center space-x-2 px-3 py-1.5 border border-[#E5E5E5] text-xs font-mono text-[#737373]">
-        <span>[ ]</span>
-        <span>MARK AS COMPLETE</span>
+      <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-black/10 dark:border-white/10 text-xs font-medium text-neutral-400">
+        <span className="w-2 h-2 rounded-full border border-neutral-400" />
+        <span>Mark as Complete</span>
       </div>
     );
   }
@@ -45,15 +45,17 @@ export function MarkCompleteButton({ slug }: MarkCompleteButtonProps) {
   return (
     <button
       onClick={handleToggle}
-      className={`inline-flex items-center space-x-2 px-3 py-1.5 border font-mono text-xs uppercase tracking-wider transition-colors ${
+      className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
         completed
-          ? 'border-[#000000] dark:border-[#FFFFFF] bg-[#000000] dark:bg-[#FFFFFF] text-[#FFFFFF] dark:text-[#000000]'
-          : 'border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#000000] text-[#000000] dark:text-[#FFFFFF] hover:border-[#000000] dark:hover:border-[#FFFFFF]'
+          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-sm'
+          : 'bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.14] text-neutral-700 dark:text-neutral-300 border border-black/[0.06] dark:border-white/[0.08]'
       }`}
       aria-label={completed ? 'Mark topic as incomplete' : 'Mark topic as complete'}
     >
-      <span className="font-bold">{completed ? '[X]' : '[ ]'}</span>
-      <span>{completed ? 'COMPLETED' : 'MARK AS COMPLETE'}</span>
+      <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${completed ? 'bg-emerald-500 text-white font-bold' : 'border border-neutral-400'}`}>
+        {completed ? '✓' : ''}
+      </span>
+      <span>{completed ? 'Topic Completed' : 'Mark as Complete'}</span>
     </button>
   );
 }

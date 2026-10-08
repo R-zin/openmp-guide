@@ -12,56 +12,58 @@ interface QuestionCardProps {
 export function QuestionCard({ question, index }: QuestionCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryBadge = (category: string) => {
     switch (category) {
       case 'conceptual':
-        return 'CONCEPTUAL';
+        return { label: 'Conceptual', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' };
       case 'output-prediction':
-        return 'OUTPUT PREDICTION';
+        return { label: 'Output Prediction', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' };
       case 'find-the-bug':
-        return 'FIND THE BUG';
+        return { label: 'Find The Bug', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' };
       case 'write-the-program':
-        return 'WRITE THE PROGRAM';
+        return { label: 'Write Code', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' };
       case 'complexity-analysis':
-        return 'COMPLEXITY ANALYSIS';
+        return { label: 'Complexity', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' };
       default:
-        return category.toUpperCase();
+        return { label: category, color: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20' };
     }
   };
+
+  const badge = getCategoryBadge(question.category);
 
   return (
     <div
       id={`q-${question.id}`}
-      className="my-6 border border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#000000] p-5"
+      className="apple-card p-6 my-6 rounded-2xl"
     >
       {/* Question Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E5E5E5] dark:border-[#262626] pb-3 mb-4">
-        <div className="flex items-center space-x-2">
-          <span className="font-mono text-xs font-bold px-2 py-0.5 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000]">
-            Q{index}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="flex items-center space-x-2.5">
+          <span className="w-7 h-7 rounded-full bg-black dark:bg-white text-white dark:text-black font-semibold text-xs flex items-center justify-center">
+            {index}
           </span>
-          <span className="font-mono text-xs text-[#737373] uppercase tracking-wider">
-            [{getCategoryLabel(question.category)}]
+          <span className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${badge.color}`}>
+            {badge.label}
           </span>
         </div>
-        <span className="font-mono text-[11px] text-[#737373] uppercase">
-          TOPIC: {question.topicRef}
+        <span className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">
+          Topic: {question.topicRef}
         </span>
       </div>
 
       {/* Question Prompt */}
-      <h3 className="text-base font-bold text-[#000000] dark:text-[#FFFFFF] mb-2 font-mono">
+      <h3 className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-white mb-2 tracking-tight">
         {question.title}
       </h3>
-      <p className="text-sm text-[#000000] dark:text-[#E5E5E5] whitespace-pre-line leading-relaxed mb-4">
+      <p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-line leading-relaxed mb-4">
         {question.prompt}
       </p>
 
       {/* Given Code Snippet if any */}
       {question.code && (
         <div className="mb-4">
-          <div className="text-[11px] font-mono text-[#737373] uppercase mb-1">
-            GIVEN CODE:
+          <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+            Given Code Snippet:
           </div>
           <CodeBlock code={question.code} language="c" />
         </div>
@@ -71,24 +73,24 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
       <div className="pt-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full sm:w-auto px-4 py-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#F5F5F5] dark:bg-[#121212] hover:bg-[#000000] hover:text-[#FFFFFF] dark:hover:bg-[#FFFFFF] dark:hover:text-[#000000] text-xs font-mono font-bold tracking-widest uppercase transition-colors flex items-center justify-between sm:justify-start sm:space-x-3"
+          className="flex items-center space-x-2 px-4 py-2 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.14] text-xs font-semibold text-neutral-800 dark:text-neutral-200 transition-all border border-black/[0.04] dark:border-white/[0.06]"
           aria-expanded={isOpen}
         >
-          <span>{isOpen ? '[-] HIDE ANSWER' : '[+] SHOW ANSWER'}</span>
-          <span className="text-[#737373] text-[10px] font-normal">
-            {isOpen ? '(CLICK TO COLLAPSE)' : '(STEP-BY-STEP SOLUTION)'}
+          <span>{isOpen ? 'Hide Solution' : 'Show Verified Solution'}</span>
+          <span className="text-neutral-400 font-normal">
+            {isOpen ? '▲' : '▼'}
           </span>
         </button>
       </div>
 
       {/* Collapsible Solution Block */}
       {isOpen && (
-        <div className="mt-4 pt-4 border-t border-[#E5E5E5] dark:border-[#262626] space-y-4">
+        <div className="mt-5 pt-5 border-t border-black/[0.06] dark:border-white/[0.08] space-y-4 animate-in fade-in duration-200">
           <div>
-            <div className="text-xs font-mono font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF] mb-2">
-              STEP-BY-STEP SOLUTION:
+            <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-2">
+              Step-by-Step Breakdown:
             </div>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-[#000000] dark:text-[#E5E5E5] leading-relaxed">
+            <ol className="list-decimal list-inside space-y-2 text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
               {question.solutionSteps.map((step, idx) => (
                 <li key={idx} className="pl-1">
                   <span>{step}</span>
@@ -99,10 +101,10 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
 
           {question.expectedOutput && (
             <div>
-              <div className="text-xs font-mono font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF] mb-1">
-                EXPECTED OUTPUT:
+              <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1.5">
+                Expected Output:
               </div>
-              <pre className="p-3 bg-[#F5F5F5] dark:bg-[#121212] border border-[#E5E5E5] dark:border-[#262626] text-xs font-mono text-[#000000] dark:text-[#FFFFFF] overflow-x-auto whitespace-pre-wrap">
+              <pre className="p-3.5 bg-neutral-100 dark:bg-neutral-900 border border-black/[0.06] dark:border-white/[0.08] rounded-xl text-xs font-mono text-neutral-900 dark:text-white overflow-x-auto whitespace-pre-wrap">
                 {question.expectedOutput}
               </pre>
             </div>
@@ -110,21 +112,20 @@ export function QuestionCard({ question, index }: QuestionCardProps) {
 
           {question.correctCode && (
             <div>
-              <div className="text-xs font-mono font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF] mb-1">
-                CORRECTED / REFERENCE IMPLEMENTATION:
+              <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1.5">
+                Corrected Reference Implementation:
               </div>
               <CodeBlock code={question.correctCode} language="c" />
             </div>
           )}
 
           {question.watchOutTip && (
-            <div className="p-3 border border-[#000000] dark:border-[#FFFFFF] bg-[#FFFFFF] dark:bg-[#000000] text-xs font-mono leading-relaxed">
-              <span className="font-bold text-[#000000] dark:text-[#FFFFFF] mr-2">
-                [!] EXAM WATCH OUT:
-              </span>
-              <span className="text-[#737373] dark:text-[#A3A3A3]">
-                {question.watchOutTip}
-              </span>
+            <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] text-xs text-amber-900 dark:text-amber-200 leading-relaxed flex items-start space-x-2">
+              <span className="text-base">⚠️</span>
+              <div>
+                <span className="font-semibold mr-1">Exam Watch Out:</span>
+                <span>{question.watchOutTip}</span>
+              </div>
             </div>
           )}
         </div>

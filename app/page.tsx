@@ -26,240 +26,365 @@ export default function HomePage() {
   const percentComplete = Math.round((totalCompleted / totalTopics) * 100);
 
   return (
-    <div className="max-w-[960px] mx-auto space-y-12 font-sans">
-      {/* Hero Header */}
-      <section className="border-b border-[#000000] dark:border-[#FFFFFF] pb-8 pt-4">
-        <div className="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-widest text-[#737373] mb-3">
-          <span>IIIT KOTTAYAM // PDC LAB EXAM REVISION</span>
-          <span>&bull;</span>
-          <span>CSS 311</span>
+    <div className="max-w-[1040px] mx-auto space-y-16 sm:space-y-24 font-sans py-4 sm:py-8">
+      {/* Apple Keynote Hero Section */}
+      <section className="text-center space-y-6 pt-6 sm:pt-12">
+        {/* Apple Pill Tag */}
+        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span>IIIT Kottayam // CSS 311 Parallel Distributed Computing</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold font-mono tracking-tight text-[#000000] dark:text-[#FFFFFF] mb-4">
-          PARALLEL PROGRAMMING
+
+        {/* Cinematic Headline */}
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-neutral-900 dark:text-white leading-[1.08] max-w-4xl mx-auto">
+          Parallel Programming. <br className="hidden sm:inline" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-400 dark:from-white dark:via-neutral-200 dark:to-neutral-500">
+            Engineered for Peak Performance.
+          </span>
         </h1>
-        <p className="text-base sm:text-lg text-[#000000] dark:text-[#E5E5E5] max-w-2xl leading-relaxed">
-          The definitive study guide covering <strong>MPI</strong> (distributed memory) and <strong>OpenMP</strong> (shared memory), engineered for undergraduate students preparing for practical lab exams, code predictions, and viva voce.
+
+        {/* Subtitle */}
+        <p className="text-base sm:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed font-normal">
+          The definitive study guide covering <strong className="font-semibold text-neutral-900 dark:text-white">MPI</strong> distributed clusters and <strong className="font-semibold text-neutral-900 dark:text-white">OpenMP</strong> multi-core shared memory. Designed with the precision of Apple engineering for your lab exams.
         </p>
 
-        {/* Quick Jump Action Pills */}
-        <div className="flex flex-wrap gap-2.5 mt-6 font-mono text-xs">
+        {/* Apple Primary & Secondary CTA Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Link
             href="/mpi/"
-            className="px-4 py-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold uppercase tracking-wider hover:opacity-80 transition-opacity"
+            className="px-6 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md hover:shadow-lg"
           >
-            START MPI (10 TOPICS) &rarr;
+            Explore MPI (Distributed) &rarr;
           </Link>
           <Link
             href="/openmp/"
-            className="px-4 py-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#FFFFFF] dark:bg-[#000000] text-[#000000] dark:text-[#FFFFFF] font-bold uppercase tracking-wider hover:bg-[#000000] hover:text-[#FFFFFF] dark:hover:bg-[#FFFFFF] dark:hover:text-[#000000] transition-colors"
+            className="px-6 py-3 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-neutral-900 dark:text-white hover:bg-black/[0.1] dark:hover:bg-white/[0.16] font-semibold text-sm transition-all border border-black/[0.06] dark:border-white/[0.08]"
           >
-            START OPENMP (10 TOPICS) &rarr;
+            Explore OpenMP (Shared) &rarr;
           </Link>
           <Link
             href="/practice/"
-            className="px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] hover:border-[#000000] dark:hover:border-[#FFFFFF] text-[#000000] dark:text-[#FFFFFF] uppercase tracking-wider transition-colors"
+            className="px-6 py-3 rounded-full text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 font-semibold text-sm transition-all"
           >
-            PRACTICE (80+ QUESTIONS)
+            Practice & Mock Exams &rarr;
           </Link>
-          <Link
-            href="/flashcards/"
-            className="px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] hover:border-[#000000] dark:hover:border-[#FFFFFF] text-[#000000] dark:text-[#FFFFFF] uppercase tracking-wider transition-colors"
-          >
-            FLASHCARDS (65)
-          </Link>
+        </div>
+
+        {/* Key Metrics Floating Ribbon */}
+        <div className="pt-8 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+            <span>20 Core Modules</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span>84+ Solved Questions</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>8 Live Simulators</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+            <span>2 Full Mock Exams</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>100% Verified C Code</span>
+          </div>
         </div>
       </section>
 
-      {/* Progress Summary Card */}
-      <section className="border border-[#000000] dark:border-[#FFFFFF] p-6 bg-[#FFFFFF] dark:bg-[#000000] font-mono">
-        <div className="flex flex-wrap items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3 mb-4">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF]">
-            YOUR LAB PREPARATION PROGRESS
-          </span>
-          <span className="text-xs px-2 py-0.5 border border-[#000000] dark:border-[#FFFFFF] font-bold">
-            {percentComplete}% COMPLETED
-          </span>
+      {/* Progress Summary Card (Apple Activity Style) */}
+      <section className="apple-card p-6 sm:p-8 rounded-3xl">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm">
+              {percentComplete}%
+            </div>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                Exam Preparation Tracker
+              </div>
+              <div className="text-base font-semibold text-neutral-900 dark:text-white">
+                {totalCompleted} of {totalTopics} Topics Completed
+              </div>
+            </div>
+          </div>
+          <Link
+            href={completedSlugs.length > 0 ? (completedSlugs[completedSlugs.length - 1].startsWith('mpi') ? '/mpi/' : '/openmp/') : '/mpi/'}
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity"
+          >
+            {totalCompleted > 0 ? 'Continue Studying &rarr;' : 'Begin Day 1 Plan &rarr;'}
+          </Link>
         </div>
 
-        {/* 1px Progress Bar Track */}
-        <div className="w-full h-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#F5F5F5] dark:bg-[#121212] mb-4">
+        {/* Smooth Rounded Progress Bar Track */}
+        <div className="w-full h-3 rounded-full bg-black/[0.04] dark:bg-white/[0.06] overflow-hidden my-6 p-0.5">
           <div
-            className="h-full bg-[#000000] dark:bg-[#FFFFFF] transition-all duration-300"
-            style={{ width: `${percentComplete}%` }}
+            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            style={{ width: `${Math.max(percentComplete, 2)}%` }}
           />
         </div>
 
+        {/* Breakdown Bento Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-            <div className="text-[#737373] text-[10px] uppercase">TOTAL TOPICS</div>
-            <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
-              {totalCompleted} / {totalTopics}
+          <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+            <div className="text-neutral-400 uppercase font-semibold text-[10px]">TOTAL SYLLABUS</div>
+            <div className="text-xl font-bold mt-1 text-neutral-900 dark:text-white">
+              {totalCompleted} <span className="text-neutral-400 text-sm font-normal">/ {totalTopics} topics</span>
             </div>
           </div>
-          <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-            <div className="text-[#737373] text-[10px] uppercase">PART A: MPI TOPICS</div>
-            <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
-              {mpiCompleted} / 10
+          <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+            <div className="text-neutral-400 uppercase font-semibold text-[10px]">MPI DISTRIBUTED</div>
+            <div className="text-xl font-bold mt-1 text-neutral-900 dark:text-white">
+              {mpiCompleted} <span className="text-neutral-400 text-sm font-normal">/ 10 modules</span>
             </div>
           </div>
-          <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#F5F5F5] dark:bg-[#121212]">
-            <div className="text-[#737373] text-[10px] uppercase">PART B: OPENMP TOPICS</div>
-            <div className="text-lg font-bold mt-1 text-[#000000] dark:text-[#FFFFFF]">
-              {ompCompleted} / 10
+          <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02]">
+            <div className="text-neutral-400 uppercase font-semibold text-[10px]">OPENMP SHARED</div>
+            <div className="text-xl font-bold mt-1 text-neutral-900 dark:text-white">
+              {ompCompleted} <span className="text-neutral-400 text-sm font-normal">/ 10 modules</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Two-Column Paradigm Choice */}
-      <section className="space-y-4">
-        <div className="text-xs font-mono font-bold uppercase tracking-widest text-[#737373]">
-          SELECT REVISION TRACK
+      {/* Apple Bento Grid Showcase */}
+      <section className="space-y-6">
+        <div className="text-center max-w-xl mx-auto space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            Two Architectures. Endless Scalability.
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Compare distributed-memory network clusters against shared-memory multi-core SMP nodes.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Column 1: MPI */}
-          <div className="border-2 border-[#000000] dark:border-[#FFFFFF] p-6 bg-[#FFFFFF] dark:bg-[#000000] flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-[#E5E5E5] dark:border-[#262626] mb-3">
-                <span className="font-bold uppercase tracking-wider">PART A</span>
-                <span className="text-[#737373]">DISTRIBUTED MEMORY</span>
+          {/* Bento Card 1: MPI */}
+          <div className="apple-card p-8 rounded-3xl flex flex-col justify-between group hover:border-blue-500/30 transition-all">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  PART A // DISTRIBUTED MEMORY
+                </span>
+                <span className="text-xs text-neutral-400">10 Modules</span>
               </div>
-              <h2 className="text-2xl font-bold font-mono text-[#000000] dark:text-[#FFFFFF] mb-3">
-                MPI ARCHITECTURE
-              </h2>
-              <p className="text-sm text-[#000000] dark:text-[#E5E5E5] leading-relaxed mb-4">
-                Autonomous processes communicating via explicit network messages over an interconnect. Covers point-to-point buffers, collective tree operations, Cartesian grids, and graph traversals.
+              <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                MPI Architecture
+              </h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Autonomous processes communicating via explicit message-passing over network interconnects. Master point-to-point buffers, collective tree operations, Cartesian process grids, and distributed graph search.
               </p>
-
-              <ul className="text-xs font-mono space-y-1.5 text-[#737373] mb-6">
-                <li>&bull; Foundations: Init, Rank, Size, Finalize</li>
-                <li>&bull; Point-to-Point: Send, Recv, Sendrecv, Deadlock</li>
-                <li>&bull; Collectives: Bcast, Scatter, Gather, Reduce, Scan</li>
-                <li>&bull; Trapezoidal rule & Odd-Even Transposition Sort</li>
-                <li>&bull; Cannon&apos;s Algorithm (2D Torus Matrix Multiplication)</li>
-                <li>&bull; Parallel Graph Search: Level-Synchronous BFS & DFS</li>
+              <ul className="text-xs space-y-2 text-neutral-600 dark:text-neutral-400 pt-2">
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Foundations: MPI_Init, Rank, Size, Barrier prints</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Point-to-Point: Send, Recv, Sendrecv, Head-to-Head deadlocks</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Collectives: Bcast, Scatter, Gather, Allreduce, Scan tree</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Cannon&apos;s Algorithm (2D Torus grid shifts & cost models)</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Parallel BFS & DFS on the Lab 10 15-node binary tree</span>
+                </li>
               </ul>
             </div>
 
-            <Link
-              href="/mpi/"
-              className="w-full py-2.5 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] text-center font-mono text-xs font-bold uppercase tracking-widest hover:opacity-85 transition-opacity"
-            >
-              EXPLORE MPI TOPICS (1..10) &rarr;
-            </Link>
+            <div className="pt-8">
+              <Link
+                href="/mpi/"
+                className="w-full inline-flex items-center justify-center py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity shadow-sm"
+              >
+                Launch MPI Track (1..10) &rarr;
+              </Link>
+            </div>
           </div>
 
-          {/* Column 2: OpenMP */}
-          <div className="border-2 border-[#000000] dark:border-[#FFFFFF] p-6 bg-[#FFFFFF] dark:bg-[#000000] flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-[#E5E5E5] dark:border-[#262626] mb-3">
-                <span className="font-bold uppercase tracking-wider">PART B</span>
-                <span className="text-[#737373]">SHARED MEMORY</span>
+          {/* Bento Card 2: OpenMP */}
+          <div className="apple-card p-8 rounded-3xl flex flex-col justify-between group hover:border-indigo-500/30 transition-all">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                  PART B // SHARED MEMORY
+                </span>
+                <span className="text-xs text-neutral-400">10 Modules</span>
               </div>
-              <h2 className="text-2xl font-bold font-mono text-[#000000] dark:text-[#FFFFFF] mb-3">
-                OPENMP ARCHITECTURE
-              </h2>
-              <p className="text-sm text-[#000000] dark:text-[#E5E5E5] leading-relaxed mb-4">
-                Lightweight threads sharing a single global virtual address space on multi-core SMP CPUs. Covers directives, worksharing schedules, race synchronization, reduction, and tasking.
+              <h3 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                OpenMP Architecture
+              </h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Lightweight threads sharing a unified virtual address space across multi-core processors. Master fork-join concurrency, loop scheduling policies, race condition locks, reduction trees, and explicit tasks.
               </p>
-
-              <ul className="text-xs font-mono space-y-1.5 text-[#737373] mb-6">
-                <li>&bull; Fork-Join model & -fopenmp compiler setup</li>
-                <li>&bull; Scoping: private, firstprivate, lastprivate, default(none)</li>
-                <li>&bull; Worksharing: parallel for, collapse, static/dynamic/guided</li>
-                <li>&bull; Synchronization: critical, atomic, barrier, locks</li>
-                <li>&bull; Reductions: Pi estimation & Trapezoidal rule</li>
-                <li>&bull; Tasks: Recursive Fibonacci & Tree Traversals</li>
+              <ul className="text-xs space-y-2 text-neutral-600 dark:text-neutral-400 pt-2">
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span>Fork-Join model & -fopenmp compiler setup</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span>Scoping: private, firstprivate, shared, default(none)</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span>Schedules: static, dynamic, guided chunk mapping</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span>Critical, atomic, barrier, and lock synchronisation</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span>False sharing prevention & cache-line padding</span>
+                </li>
               </ul>
             </div>
 
-            <Link
-              href="/openmp/"
-              className="w-full py-2.5 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] text-center font-mono text-xs font-bold uppercase tracking-widest hover:opacity-85 transition-opacity"
-            >
-              EXPLORE OPENMP TOPICS (1..10) &rarr;
-            </Link>
+            <div className="pt-8">
+              <Link
+                href="/openmp/"
+                className="w-full inline-flex items-center justify-center py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity shadow-sm"
+              >
+                Launch OpenMP Track (1..10) &rarr;
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 3-Day Revision Plan */}
-      <section className="border border-[#E5E5E5] dark:border-[#262626] p-6 bg-[#F5F5F5] dark:bg-[#0A0A0A] font-mono">
-        <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3 mb-6">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF]">
-            RECOMMENDED 3-DAY LAB REVISION PLAN
-          </span>
-          <span className="text-[11px] text-[#737373] uppercase">
-            TARGET: FULL LAB EXAM MASTERY
-          </span>
+      {/* 3-Day Revision Roadmap (Apple Timeline Cards) */}
+      <section className="space-y-6">
+        <div className="text-center max-w-xl mx-auto space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            Recommended 3-Day Lab Revision Plan
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            A battle-tested timeline to pass your parallel programming lab exam with full marks.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Day 1 */}
-          <div className="border border-[#000000] dark:border-[#FFFFFF] p-4 bg-[#FFFFFF] dark:bg-[#000000] space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-[#E5E5E5] dark:border-[#262626]">
-              <span className="font-bold text-sm">DAY 1</span>
-              <span className="text-[#737373]">FOUNDATIONS</span>
+          <div className="apple-card p-6 rounded-3xl space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-black/[0.05] dark:bg-white/[0.1] text-neutral-900 dark:text-white">
+                DAY 01
+              </span>
+              <span className="text-xs text-neutral-400 font-medium">Foundations</span>
             </div>
-            <div className="font-bold text-[#000000] dark:text-[#FFFFFF]">
-              Basics & Core Syntax
-            </div>
-            <ul className="space-y-1.5 text-[#737373]">
-              <li>&bull; MPI 01: Amdahl&apos;s Law & Foster&apos;s PCAM</li>
-              <li>&bull; MPI 02: Init, Rank, Size, Barrier</li>
-              <li>&bull; MPI 03: Point-to-Point, Ping-Pong, Ring</li>
-              <li>&bull; MPI 04: Collectives Chooser Table</li>
-              <li>&bull; OpenMP 01: Fork-Join Model & Threads</li>
-              <li>&bull; OpenMP 02: Scoping & default(none)</li>
+            <h3 className="font-semibold text-base text-neutral-900 dark:text-white">
+              Basics & Core Primitives
+            </h3>
+            <ul className="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 01: Amdahl&apos;s Law & Foster&apos;s PCAM</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 02: Init, Rank, Size, Barrier prints</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 03: Point-to-Point, Ping-Pong, Ring</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>OpenMP 01: Fork-Join Model & Threads</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>OpenMP 02: Scoping & default(none)</span>
+              </li>
             </ul>
-            <div className="pt-2 text-[11px] text-[#000000] dark:text-[#FFFFFF] font-bold">
-              Goal: Compile and execute first 4 programs without syntax bugs.
+            <div className="pt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Goal: Compile & run 4 core programs without bugs.
             </div>
           </div>
 
           {/* Day 2 */}
-          <div className="border border-[#000000] dark:border-[#FFFFFF] p-4 bg-[#FFFFFF] dark:bg-[#000000] space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-[#E5E5E5] dark:border-[#262626]">
-              <span className="font-bold text-sm">DAY 2</span>
-              <span className="text-[#737373]">ALGORITHMS</span>
+          <div className="apple-card p-6 rounded-3xl space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-black/[0.05] dark:bg-white/[0.1] text-neutral-900 dark:text-white">
+                DAY 02
+              </span>
+              <span className="text-xs text-neutral-400 font-medium">Algorithms</span>
             </div>
-            <div className="font-bold text-[#000000] dark:text-[#FFFFFF]">
+            <h3 className="font-semibold text-base text-neutral-900 dark:text-white">
               Algorithms & Performance Traps
-            </div>
-            <ul className="space-y-1.5 text-[#737373]">
-              <li>&bull; MPI 06: Trapezoidal Rule (Fix int Trap bug)</li>
-              <li>&bull; MPI 07: Parallel Odd-Even Transposition Sort</li>
-              <li>&bull; MPI 08: Cannon&apos;s 2D Matrix Multiplication</li>
-              <li>&bull; MPI 09: Parallel BFS & DFS (15-Node Tree)</li>
-              <li>&bull; OpenMP 03: Worksharing & Schedules</li>
-              <li>&bull; OpenMP 04 & 05: Atomics, Reductions, Pi</li>
-              <li>&bull; OpenMP 08: False Sharing Cache Alignment</li>
+            </h3>
+            <ul className="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 06: Trapezoidal Rule (Fix int Trap bug)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 07: Odd-Even Transposition Sort</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 08: Cannon&apos;s 2D Matrix Multiplier</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>MPI 09: Parallel BFS & DFS (15-Node Tree)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>OpenMP 03 & 08: Schedules & False Sharing</span>
+              </li>
             </ul>
-            <div className="pt-2 text-[11px] text-[#000000] dark:text-[#FFFFFF] font-bold">
-              Goal: Master partner calculations, circular shifts, and reduction trees.
+            <div className="pt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Goal: Master partner calculation & circular shifts.
             </div>
           </div>
 
           {/* Day 3 */}
-          <div className="border border-[#000000] dark:border-[#FFFFFF] p-4 bg-[#FFFFFF] dark:bg-[#000000] space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-[#E5E5E5] dark:border-[#262626]">
-              <span className="font-bold text-sm">DAY 3</span>
-              <span className="text-[#737373]">DRILLS & MOCKS</span>
+          <div className="apple-card p-6 rounded-3xl space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-black/[0.05] dark:bg-white/[0.1] text-neutral-900 dark:text-white">
+                DAY 03
+              </span>
+              <span className="text-xs text-neutral-400 font-medium">Drills & Mocks</span>
             </div>
-            <div className="font-bold text-[#000000] dark:text-[#FFFFFF]">
-              Exam Drills & Mock Tests
-            </div>
-            <ul className="space-y-1.5 text-[#737373]">
-              <li>&bull; Review all 42 MPI Solved Questions</li>
-              <li>&bull; Review all 42 OpenMP Solved Questions</li>
-              <li>&bull; Take Mock Exam 1: MPI (3 Tasks, 90 mins)</li>
-              <li>&bull; Take Mock Exam 2: OpenMP (3 Tasks, 90 mins)</li>
-              <li>&bull; Rapid-fire review of 65 Flashcards</li>
-              <li>&bull; MPI 10: Run the 10-Point Debug Checklist</li>
+            <h3 className="font-semibold text-base text-neutral-900 dark:text-white">
+              Exam Drills & Timed Mocks
+            </h3>
+            <ul className="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>Review all 42 MPI Solved Questions</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>Review all 42 OpenMP Solved Questions</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>Take Mock Exam 1: MPI (3 Tasks, 90 mins)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>Take Mock Exam 2: OpenMP (3 Tasks, 90 mins)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-neutral-400">&bull;</span>
+                <span>Rapid review with 65 Flashcards</span>
+              </li>
             </ul>
-            <div className="pt-2 text-[11px] text-[#000000] dark:text-[#FFFFFF] font-bold">
-              Goal: Achieve 100% score on output prediction and bug spotting.
+            <div className="pt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Goal: Score 100% on output prediction & bug spotting.
             </div>
           </div>
         </div>

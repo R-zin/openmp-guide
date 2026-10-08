@@ -11,7 +11,6 @@ export function OpenMPScheduleVisualizer() {
 
   const totalIterations = 24;
 
-  // Calculate iteration assignment to thread
   const computeAssignments = (): { iter: number; thread: number }[] => {
     const list: { iter: number; thread: number }[] = [];
 
@@ -32,7 +31,6 @@ export function OpenMPScheduleVisualizer() {
         currThread++;
       }
     } else {
-      // guided schedule: chunk = max(chunk_size, ceil(remaining / threads))
       let remaining = totalIterations;
       let currIter = 0;
       let currThread = 0;
@@ -55,50 +53,54 @@ export function OpenMPScheduleVisualizer() {
 
   const assignments = computeAssignments();
 
-  // Pattern / style for each thread
-  const getThreadStyle = (t: number) => {
+  const getThreadColor = (t: number) => {
     switch (t) {
       case 0:
-        return 'bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] border-[#000000] dark:border-[#FFFFFF]';
+        return { bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' };
       case 1:
-        return 'bg-[#FFFFFF] text-[#000000] dark:bg-[#000000] dark:text-[#FFFFFF] border-[#000000] dark:border-[#FFFFFF]';
+        return { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' };
       case 2:
-        return 'bg-[#E5E5E5] text-[#000000] dark:bg-[#262626] dark:text-[#FFFFFF] border-[#737373]';
+        return { bg: 'bg-purple-500/10 dark:bg-purple-500/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/30' };
       case 3:
       default:
-        return 'bg-[#F5F5F5] text-[#000000] dark:bg-[#1A1A1A] dark:text-[#FFFFFF] border-dashed border-[#737373]';
+        return { bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' };
     }
   };
 
   return (
-    <div className="my-8 border border-[#000000] dark:border-[#FFFFFF] p-5 bg-[#FFFFFF] dark:bg-[#000000] font-mono">
-      <div className="flex flex-wrap items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3 mb-4">
+    <div className="my-8 apple-card p-6 sm:p-8 rounded-3xl font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-black/[0.06] dark:border-white/[0.08]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF]">
-            INTERACTIVE VISUALIZER // OPENMP LOOP SCHEDULING
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+            Interactive Visualizer // Work-Sharing
           </span>
-          <p className="text-xs text-[#737373] mt-1 font-sans">
-            Inspect how iterations map across threads under static, dynamic, and guided policies.
+          <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight mt-0.5">
+            OpenMP Loop Scheduling Policies
+          </h3>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            Inspect how loop iterations map across thread pools under static, dynamic, and guided clauses.
           </p>
         </div>
-        <span className="text-xs px-2 py-0.5 border border-[#000000] dark:border-[#FFFFFF] uppercase">
+        <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
           #pragma omp for schedule({schedule}, {chunkSize})
         </span>
       </div>
 
-      {/* Controls */}
+      {/* Controls Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-xs">
         <div>
-          <label className="block text-[#737373] uppercase mb-1">SCHEDULE CLAUSE:</label>
-          <div className="flex border border-[#000000] dark:border-[#FFFFFF]">
+          <label className="block text-neutral-500 dark:text-neutral-400 font-medium mb-1.5 uppercase text-[10px] tracking-wider">
+            Schedule Clause:
+          </label>
+          <div className="flex p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.06]">
             {(['static', 'dynamic', 'guided'] as ScheduleType[]).map((type) => (
               <button
                 key={type}
                 onClick={() => setSchedule(type)}
-                className={`flex-1 py-1 uppercase text-center ${
+                className={`flex-1 py-1 rounded-lg text-xs font-medium transition-all ${
                   schedule === type
-                    ? 'bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold'
-                    : 'text-[#000000] dark:text-[#FFFFFF]'
+                    ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                    : 'text-neutral-500 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {type}
@@ -108,18 +110,18 @@ export function OpenMPScheduleVisualizer() {
         </div>
 
         <div>
-          <label className="block text-[#737373] uppercase mb-1">
-            CHUNK SIZE: {chunkSize}
+          <label className="block text-neutral-500 dark:text-neutral-400 font-medium mb-1.5 uppercase text-[10px] tracking-wider">
+            Chunk Size: <span className="font-semibold text-neutral-900 dark:text-white font-mono">{chunkSize}</span>
           </label>
-          <div className="flex border border-[#E5E5E5] dark:border-[#262626]">
+          <div className="flex p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.06]">
             {[1, 2, 4, 8].map((c) => (
               <button
                 key={c}
                 onClick={() => setChunkSize(c)}
-                className={`flex-1 py-1 text-center ${
+                className={`flex-1 py-1 rounded-lg text-xs font-medium transition-all ${
                   chunkSize === c
-                    ? 'border border-[#000000] dark:border-[#FFFFFF] font-bold bg-[#F5F5F5] dark:bg-[#1A1A1A]'
-                    : 'text-[#737373]'
+                    ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                    : 'text-neutral-500 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {c}
@@ -129,18 +131,18 @@ export function OpenMPScheduleVisualizer() {
         </div>
 
         <div>
-          <label className="block text-[#737373] uppercase mb-1">
-            NUM THREADS: {threads}
+          <label className="block text-neutral-500 dark:text-neutral-400 font-medium mb-1.5 uppercase text-[10px] tracking-wider">
+            Thread Count: <span className="font-semibold text-neutral-900 dark:text-white font-mono">{threads}</span>
           </label>
-          <div className="flex border border-[#E5E5E5] dark:border-[#262626]">
+          <div className="flex p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.06]">
             {[2, 3, 4].map((t) => (
               <button
                 key={t}
                 onClick={() => setThreads(t)}
-                className={`flex-1 py-1 text-center ${
+                className={`flex-1 py-1 rounded-lg text-xs font-medium transition-all ${
                   threads === t
-                    ? 'border border-[#000000] dark:border-[#FFFFFF] font-bold bg-[#F5F5F5] dark:bg-[#1A1A1A]'
-                    : 'text-[#737373]'
+                    ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                    : 'text-neutral-500 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {t}
@@ -151,52 +153,46 @@ export function OpenMPScheduleVisualizer() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 mb-4 pb-3 border-b border-[#E5E5E5] dark:border-[#262626] text-xs">
-        {Array.from({ length: threads }).map((_, t) => (
-          <div key={t} className="flex items-center space-x-1.5">
-            <span
-              className={`w-4 h-4 border inline-block ${getThreadStyle(t)}`}
-            />
-            <span className="text-[#000000] dark:text-[#FFFFFF]">THREAD {t}</span>
-          </div>
-        ))}
+      <div className="flex flex-wrap gap-4 mb-4 pb-3 border-b border-black/[0.06] dark:border-white/[0.08] text-xs">
+        {Array.from({ length: threads }).map((_, t) => {
+          const col = getThreadColor(t);
+          return (
+            <div key={t} className="flex items-center space-x-2">
+              <span className={`w-3.5 h-3.5 rounded-full ${col.bg} border ${col.border}`} />
+              <span className="font-semibold text-neutral-800 dark:text-neutral-200">Thread {t}</span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Iteration Grid Display */}
-      <div className="mb-4">
-        <div className="text-[11px] text-[#737373] uppercase mb-2">
-          LOOP ITERATIONS (i = 0 .. {totalIterations - 1}):
-        </div>
-        <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 text-center text-xs font-mono">
-          {assignments.map(({ iter, thread }) => (
+      {/* Iteration Grid */}
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2 mb-6">
+        {assignments.map(({ iter, thread }) => {
+          const col = getThreadColor(thread);
+          return (
             <div
               key={iter}
-              className={`p-2 border flex flex-col justify-between h-14 ${getThreadStyle(
-                thread
-              )}`}
+              className={`p-2.5 rounded-xl border text-center transition-all ${col.bg} ${col.border}`}
             >
-              <span className="text-[10px] opacity-75 font-normal">i={iter}</span>
-              <span className="font-bold text-xs">T{thread}</span>
+              <div className="text-[10px] text-neutral-400 font-mono">i={iter}</div>
+              <div className={`text-xs font-bold font-mono mt-0.5 ${col.text}`}>
+                T{thread}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Explanation Box */}
-      <div className="p-3 border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#121212] text-xs space-y-1">
-        <div className="font-bold text-[#000000] dark:text-[#FFFFFF]">
-          {schedule === 'static' && 'STATIC POLICY (Compile-time / Lowest Overhead):'}
-          {schedule === 'dynamic' && 'DYNAMIC POLICY (Work-Queue / Best for Unbalanced Workloads):'}
-          {schedule === 'guided' && 'GUIDED POLICY (Decreasing Chunk Sizes / Adaptive Balance):'}
+      {/* Description Box */}
+      <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] text-xs space-y-1.5 leading-relaxed">
+        <div className="font-semibold text-neutral-900 dark:text-white">
+          {schedule === 'static' && 'Static Policy: Low overhead. Round-robin assignment computed ahead-of-time at compile/launch time.'}
+          {schedule === 'dynamic' && 'Dynamic Policy: Work-queue model. Idle threads request next chunk dynamically at runtime. Best for irregular workloads.'}
+          {schedule === 'guided' && 'Guided Policy: Exponentially decaying chunks starting large and shrinking down to chunk_size to minimize scheduling overhead.'}
         </div>
-        <p className="text-[#737373] leading-relaxed">
-          {schedule === 'static' &&
-            'Iterations are partitioned deterministically in round-robin chunks before loop execution begins. Zero runtime queue contention overhead. Ideal when every iteration takes approximately equal time.'}
-          {schedule === 'dynamic' &&
-            'Threads claim a chunk of iterations from a shared queue when idle. Minimizes idle time for non-uniform workloads (e.g. Mandelbrot set or sparse matrices) at the cost of atomic synchronization queue overhead.'}
-          {schedule === 'guided' &&
-            'Starts with large chunk sizes to minimize synchronization overhead, exponentially reducing chunk size towards chunk_size as loop completion approaches to smooth tail load imbalance.'}
-        </p>
+        <div className="text-neutral-500 dark:text-neutral-400">
+          Rule of thumb: Static has near-zero overhead; Dynamic excels when iteration execution times vary widely; Guided balances both.
+        </div>
       </div>
     </div>
   );

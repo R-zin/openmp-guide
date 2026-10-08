@@ -35,24 +35,24 @@ export function TableOfContents({ sections }: TableOfContentsProps) {
   if (sections.length === 0) return null;
 
   return (
-    <nav className="hidden xl:block w-64 shrink-0 font-mono text-xs text-[#000000] dark:text-[#FFFFFF] pl-6 border-l border-[#E5E5E5] dark:border-[#262626]">
+    <nav className="hidden xl:block w-64 shrink-0 text-xs text-neutral-800 dark:text-neutral-200 pl-6 border-l border-black/[0.06] dark:border-white/[0.08]">
       <div className="sticky top-20 space-y-3">
-        <div className="text-[11px] font-bold uppercase tracking-widest text-[#737373]">
-          ON THIS PAGE
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+          On This Page
         </div>
-        <ul className="space-y-1.5 border-l border-[#E5E5E5] dark:border-[#262626] -ml-[1px]">
+        <ul className="space-y-1 relative">
           {sections.map((section) => {
             const isActive = activeId === section.id;
             return (
               <li key={section.id}>
                 <a
                   href={`#${section.id}`}
-                  className={`block border-l-2 py-0.5 transition-colors ${
-                    section.level === 3 ? 'pl-4' : 'pl-2.5'
+                  className={`block py-1 rounded-lg transition-all text-xs ${
+                    section.level === 3 ? 'pl-4' : 'pl-2'
                   } ${
                     isActive
-                      ? 'border-[#000000] dark:border-[#FFFFFF] font-bold text-[#000000] dark:text-[#FFFFFF]'
-                      : 'border-transparent text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
+                      ? 'text-blue-600 dark:text-blue-400 font-semibold bg-blue-500/[0.08]'
+                      : 'text-neutral-500 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
                   }`}
                 >
                   {section.title}

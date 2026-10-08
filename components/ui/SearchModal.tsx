@@ -64,83 +64,91 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#000000]/60 flex items-start justify-center pt-20 px-4"
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-start justify-center pt-20 sm:pt-28 px-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl border border-[#000000] dark:border-[#FFFFFF] bg-[#FFFFFF] dark:bg-[#000000] p-4 text-[#000000] dark:text-[#FFFFFF]"
+        className="w-full max-w-2xl rounded-3xl apple-glass shadow-2xl border border-black/10 dark:border-white/10 p-4 sm:p-5 text-neutral-900 dark:text-white overflow-hidden transition-all"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        {/* Search Input Bar */}
-        <div className="flex items-center border-b border-[#E5E5E5] dark:border-[#262626] pb-3">
-          <span className="font-mono text-xs uppercase tracking-widest text-[#737373] mr-3">
-            SEARCH:
-          </span>
+        {/* Apple Spotlight Search Input Bar */}
+        <div className="flex items-center pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+          <svg className="w-5 h-5 text-neutral-400 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type MPI routine, OpenMP directive, algorithm..."
-            className="w-full bg-transparent outline-none font-mono text-sm placeholder:text-[#737373]"
+            placeholder="Search MPI functions, OpenMP clauses, algorithms..."
+            className="w-full bg-transparent outline-none text-base sm:text-lg font-medium placeholder:text-neutral-400"
             aria-label="Search study guide"
           />
           <button
             onClick={onClose}
-            className="font-mono text-xs text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF] ml-2 px-2 py-1 border border-[#E5E5E5] dark:border-[#262626]"
+            className="text-xs text-neutral-400 hover:text-black dark:hover:text-white px-2 py-1 rounded-md bg-black/[0.05] dark:bg-white/[0.08]"
           >
             ESC
           </button>
         </div>
 
         {/* Results List */}
-        <div className="max-h-96 overflow-y-auto mt-3 divide-y divide-[#E5E5E5] dark:divide-[#262626]">
+        <div className="max-h-96 overflow-y-auto mt-2 space-y-1">
           {query.trim() && results.length === 0 && (
-            <div className="py-8 text-center text-xs font-mono text-[#737373]">
-              NO MATCHES FOUND FOR &quot;{query}&quot;
+            <div className="py-12 text-center text-xs text-neutral-400">
+              No matching topics or questions for &quot;{query}&quot;
             </div>
           )}
 
           {!query.trim() && (
-            <div className="py-4 text-xs font-mono text-[#737373]">
-              Quick searches: <span className="underline cursor-pointer" onClick={() => setQuery('deadlock')}>deadlock</span>,{' '}
-              <span className="underline cursor-pointer" onClick={() => setQuery('cannon')}>cannon</span>,{' '}
-              <span className="underline cursor-pointer" onClick={() => setQuery('trapezoidal')}>trapezoidal</span>,{' '}
-              <span className="underline cursor-pointer" onClick={() => setQuery('schedule')}>schedule</span>,{' '}
-              <span className="underline cursor-pointer" onClick={() => setQuery('critical')}>critical vs atomic</span>
+            <div className="py-4 px-2 text-xs text-neutral-400 flex flex-wrap gap-2 items-center">
+              <span>Quick searches:</span>
+              {['deadlock', 'cannon', 'trapezoidal', 'schedule', 'critical vs atomic', 'tasks'].map((term) => (
+                <button
+                  key={term}
+                  onClick={() => setQuery(term)}
+                  className="px-2.5 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] text-neutral-700 dark:text-neutral-300 font-medium transition-colors"
+                >
+                  {term}
+                </button>
+              ))}
             </div>
           )}
 
-          {results.map((item, index) => (
-            <div
-              key={item.id}
-              onClick={() => handleSelect(item)}
-              className={`p-3 cursor-pointer text-left font-mono transition-colors ${
-                index === selectedIndex
-                  ? 'bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000]'
-                  : 'hover:bg-[#F5F5F5] dark:hover:bg-[#141414]'
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="uppercase tracking-widest opacity-70">
-                  [{item.category}]
-                </span>
-                <span className="text-[10px] opacity-60 truncate max-w-[200px]">
-                  {item.path}
-                </span>
+          {results.map((item, index) => {
+            const isSelected = index === selectedIndex;
+            return (
+              <div
+                key={item.id}
+                onClick={() => handleSelect(item)}
+                className={`p-3 rounded-2xl cursor-pointer text-left transition-all ${
+                  isSelected
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-neutral-800 dark:text-neutral-200'
+                }`}
+              >
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className={`uppercase tracking-wider font-semibold ${isSelected ? 'text-blue-100' : 'text-neutral-400'}`}>
+                    {item.category}
+                  </span>
+                  <span className={`text-[10px] font-mono truncate max-w-[200px] ${isSelected ? 'text-blue-200' : 'text-neutral-400'}`}>
+                    {item.path}
+                  </span>
+                </div>
+                <div className="text-sm font-semibold truncate">{item.title}</div>
+                <div className={`text-xs truncate mt-0.5 ${isSelected ? 'text-blue-100' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                  {item.snippet}
+                </div>
               </div>
-              <div className="text-sm font-bold truncate">{item.title}</div>
-              <div className="text-xs opacity-80 truncate mt-1">
-                {item.snippet}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer shortcuts */}
-        <div className="border-t border-[#E5E5E5] dark:border-[#262626] pt-3 mt-3 flex items-center justify-between text-[11px] font-mono text-[#737373]">
-          <span>UP/DOWN to navigate, ENTER to open</span>
+        <div className="border-t border-black/[0.06] dark:border-white/[0.08] pt-3 mt-2 flex items-center justify-between text-[11px] text-neutral-400">
+          <span>Use &uarr; &darr; to navigate, &crarr; to select</span>
           <span>{results.length} results</span>
         </div>
       </div>

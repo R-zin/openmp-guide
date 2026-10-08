@@ -17,10 +17,8 @@ export function HelloSimulator() {
 
     let scheduled: number[];
     if (withBarrier) {
-      // Barrier ordered or rank ordered output
       scheduled = [...items].sort((a, b) => a - b);
     } else {
-      // Shuffle with non-deterministic random latency
       scheduled = [...items].sort(() => Math.random() - 0.5);
     }
 
@@ -41,52 +39,57 @@ export function HelloSimulator() {
   };
 
   return (
-    <div className="my-8 border border-[#000000] dark:border-[#FFFFFF] p-5 bg-[#FFFFFF] dark:bg-[#000000] font-mono">
-      <div className="flex flex-wrap items-center justify-between border-b border-[#E5E5E5] dark:border-[#262626] pb-3 mb-4">
+    <div className="my-8 apple-card p-6 sm:p-8 rounded-3xl font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-black/[0.06] dark:border-white/[0.08]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#000000] dark:text-[#FFFFFF]">
-            INTERACTIVE SIMULATOR // NON-DETERMINISTIC EXECUTION
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+            Interactive Simulator // Concurrency
           </span>
-          <p className="text-xs text-[#737373] mt-1 font-sans">
-            Demonstrates race-free asynchronous stdout interleaving across concurrent workers.
+          <h3 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight mt-0.5">
+            Non-Deterministic Execution Order
+          </h3>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            Simulates asynchronous stdout interleaving across concurrent workers and cores.
           </p>
         </div>
-        <span className="text-[11px] px-2 py-0.5 border border-[#000000] dark:border-[#FFFFFF] uppercase">
-          LIVE DEMO
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          ● LIVE
         </span>
       </div>
 
-      {/* Controls */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-xs">
+      {/* Controls Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-xs">
         <div>
-          <label className="block text-[#737373] uppercase mb-1">PARADIGM:</label>
-          <div className="flex border border-[#000000] dark:border-[#FFFFFF]">
+          <label className="block text-neutral-500 dark:text-neutral-400 font-medium mb-1.5 uppercase text-[10px] tracking-wider">
+            Paradigm:
+          </label>
+          <div className="flex p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.06]">
             <button
               onClick={() => setMode('mpi')}
-              className={`flex-1 py-1 uppercase text-center ${
+              className={`flex-1 py-1 rounded-lg text-xs font-medium transition-all ${
                 mode === 'mpi'
-                  ? 'bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold'
-                  : 'bg-transparent text-[#000000] dark:text-[#FFFFFF]'
+                  ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                  : 'text-neutral-500 hover:text-black dark:hover:text-white'
               }`}
             >
               MPI
             </button>
             <button
               onClick={() => setMode('openmp')}
-              className={`flex-1 py-1 uppercase text-center ${
+              className={`flex-1 py-1 rounded-lg text-xs font-medium transition-all ${
                 mode === 'openmp'
-                  ? 'bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold'
-                  : 'bg-transparent text-[#000000] dark:text-[#FFFFFF]'
+                  ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                  : 'text-neutral-500 hover:text-black dark:hover:text-white'
               }`}
             >
-              OPENMP
+              OpenMP
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-[#737373] uppercase mb-1">
-            {mode === 'mpi' ? 'PROCESSES (np):' : 'THREADS (OMP_NUM_THREADS):'} {count}
+          <label className="block text-neutral-500 dark:text-neutral-400 font-medium mb-1.5 uppercase text-[10px] tracking-wider">
+            {mode === 'mpi' ? 'Processes (np):' : 'Threads:'} <span className="font-semibold text-neutral-900 dark:text-white font-mono">{count}</span>
           </label>
           <input
             type="range"
@@ -94,19 +97,19 @@ export function HelloSimulator() {
             max={8}
             value={count}
             onChange={(e) => setCount(parseInt(e.target.value, 10))}
-            className="w-full accent-black dark:accent-white"
+            className="w-full accent-blue-600 cursor-pointer"
           />
         </div>
 
         <div className="flex flex-col justify-end">
-          <label className="flex items-center space-x-2 text-[#000000] dark:text-[#FFFFFF] cursor-pointer">
+          <label className="flex items-center space-x-2 text-neutral-700 dark:text-neutral-300 cursor-pointer p-2 rounded-xl hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
             <input
               type="checkbox"
               checked={withBarrier}
               onChange={(e) => setWithBarrier(e.target.checked)}
-              className="accent-black dark:accent-white"
+              className="accent-blue-600 rounded"
             />
-            <span className="text-[11px] uppercase">RANK-ORDER ENFORCED</span>
+            <span className="text-xs font-medium">Rank-Order Enforced</span>
           </label>
         </div>
 
@@ -114,35 +117,36 @@ export function HelloSimulator() {
           <button
             onClick={runSimulation}
             disabled={isRunning}
-            className="w-full py-1.5 px-3 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] dark:bg-[#FFFFFF] text-[#FFFFFF] dark:text-[#000000] hover:bg-transparent hover:text-[#000000] dark:hover:bg-transparent dark:hover:text-[#FFFFFF] font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
+            className="w-full py-2 px-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-semibold text-xs tracking-wide transition-all shadow-sm hover:opacity-90 disabled:opacity-40"
           >
-            {isRunning ? 'EXECUTING...' : 'RUN SIMULATION'}
+            {isRunning ? 'Executing...' : 'Run Simulation'}
           </button>
         </div>
       </div>
 
       {/* Visual Terminal Screen */}
-      <div className="border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#0C0C0C] p-4 text-xs min-h-[160px] flex flex-col justify-between">
+      <div className="rounded-2xl bg-[#1A1A20] dark:bg-[#0D0D10] border border-white/[0.08] p-4 text-xs font-mono min-h-[160px] flex flex-col justify-between text-neutral-200 shadow-inner">
         <div className="space-y-1.5">
-          <div className="text-[11px] text-[#737373] pb-1 border-b border-[#E5E5E5] dark:border-[#262626]">
-            COMMAND: {mode === 'mpi' ? `mpirun -np ${count} ./hello` : `export OMP_NUM_THREADS=${count} && ./hello`}
+          <div className="text-[11px] text-neutral-400 pb-2 border-b border-white/[0.08] flex items-center justify-between">
+            <span>$ {mode === 'mpi' ? `mpirun -np ${count} ./hello` : `OMP_NUM_THREADS=${count} ./hello`}</span>
+            <span className="text-[10px] text-neutral-500">zsh terminal</span>
           </div>
           {outputs.length === 0 && !isRunning && (
-            <div className="text-[#737373] py-6 text-center">
-              Click [RUN SIMULATION] to observe worker output order.
+            <div className="text-neutral-500 py-6 text-center">
+              Click [Run Simulation] above to observe worker arrival order.
             </div>
           )}
           {outputs.map((line, idx) => (
-            <div key={idx} className="text-[#000000] dark:text-[#FFFFFF]">
+            <div key={idx} className="text-neutral-200">
               {line}
             </div>
           ))}
         </div>
         {outputs.length === count && (
-          <div className="mt-3 pt-2 border-t border-[#E5E5E5] dark:border-[#262626] text-[11px] text-[#737373]">
+          <div className="mt-3 pt-2 border-t border-white/[0.08] text-[11px] text-neutral-400">
             {withBarrier
-              ? 'Synchronized mode: Outputs arrive sequentially in strict order.'
-              : 'Observation: Notice how rank arrival order changes on consecutive runs due to OS scheduling and hardware core preemption!'}
+              ? '✓ Synchronized mode: Outputs arrive sequentially in strict order.'
+              : '⚡ Observation: Notice how worker output order changes between runs due to OS thread preemption and core scheduling!'}
           </div>
         )}
       </div>

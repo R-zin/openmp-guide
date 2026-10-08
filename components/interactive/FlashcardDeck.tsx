@@ -13,7 +13,6 @@ export function FlashcardDeck({ cards }: FlashcardDeckProps) {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  // Extract unique categories
   const categories = ['ALL', ...Array.from(new Set(cards.map((c) => c.category)))];
 
   const handleFilter = (cat: string) => {
@@ -67,24 +66,24 @@ export function FlashcardDeck({ cards }: FlashcardDeckProps) {
 
   if (!currentCard) {
     return (
-      <div className="p-8 text-center border border-[#E5E5E5] font-mono text-xs">
+      <div className="p-8 text-center apple-card rounded-2xl text-xs text-neutral-400">
         No flashcards found.
       </div>
     );
   }
 
   return (
-    <div className="my-8 font-mono">
+    <div className="my-8 font-sans">
       {/* Category Filter Toolbar */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] mb-6">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => handleFilter(cat)}
-            className={`px-2.5 py-1 text-xs uppercase border transition-colors ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
               selectedCategory === cat
-                ? 'border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold'
-                : 'border-[#E5E5E5] dark:border-[#262626] text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
+                ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
             }`}
           >
             {cat}
@@ -92,47 +91,47 @@ export function FlashcardDeck({ cards }: FlashcardDeckProps) {
         ))}
       </div>
 
-      {/* Main Flashcard */}
+      {/* Main Apple Flashcard */}
       <div
         onClick={() => setIsFlipped(!isFlipped)}
-        className="cursor-pointer min-h-[300px] border-2 border-[#000000] dark:border-[#FFFFFF] bg-[#FFFFFF] dark:bg-[#000000] p-6 sm:p-8 flex flex-col justify-between transition-all select-none"
+        className="cursor-pointer min-h-[340px] apple-card rounded-3xl p-8 sm:p-10 flex flex-col justify-between transition-all duration-300 select-none relative overflow-hidden group hover:border-black/20 dark:hover:border-white/20"
       >
         {/* Card Header */}
-        <div className="flex justify-between items-center border-b border-[#E5E5E5] dark:border-[#262626] pb-3 text-xs">
+        <div className="flex justify-between items-center pb-4 border-b border-black/[0.06] dark:border-white/[0.08] text-xs">
           <div className="flex items-center space-x-2">
-            <span className="font-bold uppercase tracking-wider text-[#000000] dark:text-[#FFFFFF]">
-              [{currentCard.technology.toUpperCase()}]
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-wide">
+              {currentCard.technology}
             </span>
-            <span className="text-[#737373] uppercase">
+            <span className="text-neutral-400 text-xs font-medium">
               {currentCard.category}
             </span>
           </div>
-          <span className="text-[11px] text-[#737373]">
-            {isFlipped ? '[ANSWER SIDE]' : '[QUESTION SIDE]'}
+          <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+            {isFlipped ? 'Answer Side' : 'Question Side'}
           </span>
         </div>
 
         {/* Card Body */}
-        <div className="py-6 flex flex-col justify-center my-auto">
+        <div className="py-8 flex flex-col justify-center my-auto">
           {!isFlipped ? (
             <div>
-              <div className="text-xs uppercase tracking-widest text-[#737373] mb-3">
-                QUESTION / CONCEPT:
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-3">
+                Question / Core Concept:
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#000000] dark:text-[#FFFFFF] leading-snug">
+              <h2 className="text-xl sm:text-2xl font-semibold text-neutral-900 dark:text-white leading-snug tracking-tight">
                 {currentCard.front}
               </h2>
             </div>
           ) : (
             <div>
-              <div className="text-xs uppercase tracking-widest text-[#737373] mb-3">
-                ANSWER / SPECIFICATION:
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-3">
+                Specification / Solution:
               </div>
-              <div className="text-sm sm:text-base text-[#000000] dark:text-[#FFFFFF] whitespace-pre-line leading-relaxed font-sans">
+              <div className="text-base sm:text-lg text-neutral-800 dark:text-neutral-200 whitespace-pre-line leading-relaxed">
                 {currentCard.back}
               </div>
               {currentCard.codeSnippet && (
-                <div className="mt-4 p-3 bg-[#F5F5F5] dark:bg-[#121212] border border-[#E5E5E5] dark:border-[#262626] font-mono text-xs">
+                <div className="mt-4 p-4 rounded-xl bg-neutral-900 text-neutral-200 font-mono text-xs overflow-x-auto">
                   <pre>
                     <code>{currentCard.codeSnippet}</code>
                   </pre>
@@ -143,44 +142,48 @@ export function FlashcardDeck({ cards }: FlashcardDeckProps) {
         </div>
 
         {/* Card Footer */}
-        <div className="flex justify-between items-center pt-3 border-t border-[#E5E5E5] dark:border-[#262626] text-xs text-[#737373]">
-          <span>CLICK CARD OR PRESS SPACE TO FLIP</span>
-          <span>
-            CARD {currentIndex + 1} OF {deck.length}
+        <div className="flex justify-between items-center pt-4 border-t border-black/[0.06] dark:border-white/[0.08] text-xs text-neutral-400">
+          <span className="flex items-center space-x-1.5">
+            <span>Click card or press</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.1] text-[10px] text-neutral-600 dark:text-neutral-300 font-mono">Space</kbd>
+            <span>to flip</span>
+          </span>
+          <span className="font-semibold text-neutral-700 dark:text-neutral-300">
+            Card {currentIndex + 1} of {deck.length}
           </span>
         </div>
       </div>
 
       {/* Navigation & Controls Bar */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center space-x-2">
           <button
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] hover:border-[#000000] dark:hover:border-[#FFFFFF] disabled:opacity-30"
+            className="px-4 py-2.5 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-neutral-700 dark:text-neutral-300 font-medium transition-all disabled:opacity-30"
           >
-            &larr; PREVIOUS
+            &larr; Previous
           </button>
           <button
             onClick={() => setIsFlipped(!isFlipped)}
-            className="px-5 py-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold uppercase tracking-wider"
+            className="px-6 py-2.5 rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 font-semibold transition-all shadow-sm"
           >
-            {isFlipped ? 'SHOW QUESTION' : 'FLIP ANSWER'}
+            {isFlipped ? 'Show Question' : 'Flip Answer'}
           </button>
           <button
             onClick={handleNext}
             disabled={currentIndex === deck.length - 1}
-            className="px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] hover:border-[#000000] dark:hover:border-[#FFFFFF] disabled:opacity-30"
+            className="px-4 py-2.5 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-neutral-700 dark:text-neutral-300 font-medium transition-all disabled:opacity-30"
           >
-            NEXT &rarr;
+            Next &rarr;
           </button>
         </div>
 
         <button
           onClick={handleShuffle}
-          className="px-3 py-2 border border-[#E5E5E5] dark:border-[#262626] hover:border-[#000000] dark:hover:border-[#FFFFFF] text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF] uppercase"
+          className="px-4 py-2.5 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-neutral-500 hover:text-black dark:hover:text-white font-medium transition-all"
         >
-          SHUFFLE CARDS
+          Shuffle Cards ⟳
         </button>
       </div>
     </div>

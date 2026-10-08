@@ -11,52 +11,68 @@ export default function FlashcardsPage() {
   const cards = getFlashcards();
 
   return (
-    <div className="max-w-[860px] mx-auto space-y-8 font-sans">
+    <div className="max-w-[880px] mx-auto space-y-8 font-sans py-4">
       {/* Header */}
-      <div className="border-b border-[#000000] dark:border-[#FFFFFF] pb-6">
-        <div className="text-xs font-mono font-bold uppercase tracking-widest text-[#737373] mb-2">
-          RAPID REVISION DRILLS
+      <div className="space-y-3 pb-6 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+          <span>Rapid Revision Drills</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold font-mono tracking-tight text-[#000000] dark:text-[#FFFFFF] mb-3">
-          INTERACTIVE FLASHCARDS ({cards.length})
+        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white">
+          Interactive Flashcards ({cards.length})
         </h1>
-        <p className="text-sm sm:text-base text-[#737373] dark:text-[#A3A3A3] leading-relaxed">
+        <p className="text-base text-neutral-600 dark:text-neutral-400 max-w-2xl leading-relaxed">
           Test your recall on MPI function signatures, OpenMP directive scoping, communication complexities, and slide pitfalls. Use the spacebar or Enter to flip cards, and left/right arrow keys to navigate.
         </p>
       </div>
 
-      {/* Instructions Box */}
-      <div className="p-4 border border-[#E5E5E5] dark:border-[#262626] bg-[#F5F5F5] dark:bg-[#121212] font-mono text-xs flex flex-wrap gap-4 justify-between items-center text-[#737373] dark:text-[#8C8C8C]">
-        <div>
-          <span className="font-bold text-[#000000] dark:text-[#FFFFFF]">KEYBOARD SHORTCUTS:</span>{' '}
-          <code className="px-1.5 py-0.5 border border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#000000] text-[#000000] dark:text-[#FFFFFF]">Space</code> or <code className="px-1.5 py-0.5 border border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#000000] text-[#000000] dark:text-[#FFFFFF]">Enter</code> to flip &bull;{' '}
-          <code className="px-1.5 py-0.5 border border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#000000] text-[#000000] dark:text-[#FFFFFF]">&larr;</code> / <code className="px-1.5 py-0.5 border border-[#E5E5E5] dark:border-[#262626] bg-[#FFFFFF] dark:bg-[#000000] text-[#000000] dark:text-[#FFFFFF]">&rarr;</code> to navigate
+      {/* Keyboard Shortcuts Pill Bar */}
+      <div className="p-4 rounded-2xl apple-card text-xs flex flex-wrap gap-4 justify-between items-center text-neutral-600 dark:text-neutral-400">
+        <div className="flex items-center space-x-2">
+          <span className="font-semibold text-neutral-900 dark:text-white">Shortcuts:</span>
+          <span className="flex items-center space-x-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.1] text-[10px] text-neutral-700 dark:text-neutral-300 font-mono">Space</kbd>
+            <span>/</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.1] text-[10px] text-neutral-700 dark:text-neutral-300 font-mono">Enter</kbd>
+            <span>flip</span>
+          </span>
+          <span>&bull;</span>
+          <span className="flex items-center space-x-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.1] text-[10px] text-neutral-700 dark:text-neutral-300 font-mono">&larr;</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.1] text-[10px] text-neutral-700 dark:text-neutral-300 font-mono">&rarr;</kbd>
+            <span>navigate</span>
+          </span>
         </div>
-        <div>
-          Total: <span className="font-bold text-[#000000] dark:text-[#FFFFFF]">{cards.length} cards</span>
+        <div className="font-semibold text-neutral-900 dark:text-white">
+          {cards.length} Cards in Deck
         </div>
       </div>
 
       {/* Flashcard Component */}
       <FlashcardDeck cards={cards} />
 
-      {/* Study Tips for Flashcards */}
-      <div className="border border-[#000000] dark:border-[#FFFFFF] p-6 space-y-4">
-        <div className="text-xs font-mono font-bold uppercase tracking-wider text-[#000000] dark:text-[#FFFFFF]">
-          EXAM REVISION STRATEGY WITH FLASHCARDS
+      {/* Revision Strategy Cards */}
+      <div className="apple-card p-6 sm:p-8 rounded-3xl space-y-4">
+        <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+          Exam Revision Strategy with Flashcards
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono text-[#737373] dark:text-[#8C8C8C]">
-          <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#FFFFFF] dark:bg-[#000000]">
-            <div className="font-bold text-[#000000] dark:text-[#FFFFFF] mb-1">1. SIGNATURE RECALL</div>
-            Verify you can write exact argument orders for <code className="text-[#000000] dark:text-[#FFFFFF]">MPI_Sendrecv</code>, <code className="text-[#000000] dark:text-[#FFFFFF]">MPI_Reduce</code>, and <code className="text-[#000000] dark:text-[#FFFFFF]">MPI_Scatter</code> without consulting docs.
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02] space-y-1">
+            <div className="font-semibold text-neutral-900 dark:text-white">1. Signature Recall</div>
+            <p className="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              Verify you can write exact argument orders for <code className="text-neutral-900 dark:text-white font-mono">MPI_Sendrecv</code>, <code className="text-neutral-900 dark:text-white font-mono">MPI_Reduce</code>, and <code className="text-neutral-900 dark:text-white font-mono">MPI_Scatter</code> without consulting docs.
+            </p>
           </div>
-          <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#FFFFFF] dark:bg-[#000000]">
-            <div className="font-bold text-[#000000] dark:text-[#FFFFFF] mb-1">2. DEFAULT SCOPING</div>
-            Drill variable scoping rules: parallel loop index variables are always private; shared variables cause silent data races without atomic or reduction.
+          <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02] space-y-1">
+            <div className="font-semibold text-neutral-900 dark:text-white">2. Default Scoping</div>
+            <p className="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              Drill variable scoping rules: parallel loop index variables are always private; shared variables cause silent data races without atomic or reduction.
+            </p>
           </div>
-          <div className="border border-[#E5E5E5] dark:border-[#262626] p-3 bg-[#FFFFFF] dark:bg-[#000000]">
-            <div className="font-bold text-[#000000] dark:text-[#FFFFFF] mb-1">3. COMPLEXITIES</div>
-            Memorize Cannon's algorithm communication cost and parallel odd-even transposition sort phase bounds for viva/theory questions.
+          <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.01] dark:bg-white/[0.02] space-y-1">
+            <div className="font-semibold text-neutral-900 dark:text-white">3. Complexities</div>
+            <p className="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              Memorize Cannon&apos;s algorithm communication cost and parallel odd-even transposition sort phase bounds for viva/theory questions.
+            </p>
           </div>
         </div>
       </div>

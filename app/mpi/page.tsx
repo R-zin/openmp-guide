@@ -11,73 +11,80 @@ export default function MpiHubPage() {
   const topics = getAllMpiTopics();
 
   return (
-    <div className="max-w-[860px] mx-auto space-y-8 font-sans">
+    <div className="max-w-[960px] mx-auto space-y-10 font-sans py-4">
       {/* Header */}
-      <div className="border-b border-[#000000] dark:border-[#FFFFFF] pb-6">
-        <div className="text-xs font-mono font-bold uppercase tracking-widest text-[#737373] mb-2">
-          PART A // DISTRIBUTED MEMORY COMPUTING
+      <div className="space-y-3 pb-6 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+          <span>Part A // Distributed Memory Computing</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold font-mono tracking-tight text-[#000000] dark:text-[#FFFFFF] mb-3">
-          MESSAGE PASSING INTERFACE (MPI)
+        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white">
+          Message Passing Interface (MPI)
         </h1>
-        <p className="text-sm sm:text-base text-[#737373] dark:text-[#A3A3A3] leading-relaxed">
+        <p className="text-base text-neutral-600 dark:text-neutral-400 max-w-2xl leading-relaxed">
           The primary programming model for distributed memory supercomputers and commodity clusters. Master process execution, point-to-point communication semantics, tree collectives, data distribution topologies, and classic parallel algorithms.
         </p>
       </div>
 
-      {/* Topic List Grid */}
-      <div className="divide-y divide-[#E5E5E5] dark:divide-[#262626] border-t border-b border-[#E5E5E5] dark:border-[#262626]">
+      {/* Topic List Cards */}
+      <div className="grid grid-cols-1 gap-4">
         {topics.map((topic) => (
           <Link
             key={topic.slug}
             href={`/mpi/${topic.slug}/`}
-            className="group block py-5 transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#101010] px-3 -mx-3"
+            className="apple-card p-6 sm:p-7 rounded-2xl group flex flex-col justify-between hover:border-blue-500/30 transition-all"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono mb-2">
-              <span className="font-bold text-[#000000] dark:text-[#FFFFFF] tracking-widest uppercase">
-                TOPIC {String(topic.order).padStart(2, '0')}
-              </span>
-              <span className="text-[#737373]">
-                {topic.readingTimeMinutes} MIN READ
-              </span>
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-3">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-wide">
+                  Topic {String(topic.order).padStart(2, '0')}
+                </span>
+                <span className="text-neutral-400 text-xs font-medium">
+                  {topic.readingTimeMinutes} min read
+                </span>
+              </div>
+
+              <h2 className="text-xl font-bold text-neutral-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight mb-2">
+                {topic.title}
+              </h2>
+
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4">
+                {topic.description}
+              </p>
+
+              {/* Sub-sections Pills */}
+              <div className="flex flex-wrap gap-1.5 text-xs">
+                {topic.sections.map((sec) => (
+                  <span
+                    key={sec.id}
+                    className="px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] text-neutral-600 dark:text-neutral-400 text-[11px]"
+                  >
+                    {sec.title}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <h2 className="text-lg sm:text-xl font-bold font-mono text-[#000000] dark:text-[#FFFFFF] group-hover:underline mb-2">
-              {topic.title}
-            </h2>
-
-            <p className="text-sm text-[#737373] dark:text-[#8C8C8C] leading-relaxed mb-3">
-              {topic.description}
-            </p>
-
-            {/* Sub-sections Pills */}
-            <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-              {topic.sections.map((sec) => (
-                <span
-                  key={sec.id}
-                  className="px-2 py-0.5 border border-[#E5E5E5] dark:border-[#262626] text-[#737373]"
-                >
-                  {sec.title}
-                </span>
-              ))}
+            <div className="pt-4 mt-4 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400">
+              <span>Read Module &rarr;</span>
+              <span className="text-neutral-400 text-[11px] font-normal">Includes code & interactive demo</span>
             </div>
           </Link>
         ))}
       </div>
 
       {/* Navigation to Practice */}
-      <div className="pt-4 flex flex-wrap justify-between items-center gap-4 text-xs font-mono">
+      <div className="pt-6 border-t border-black/[0.06] dark:border-white/[0.08] flex justify-between items-center text-xs">
         <Link
           href="/"
-          className="text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF]"
+          className="px-4 py-2 rounded-full border border-black/10 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all"
         >
-          &larr; BACK TO OVERVIEW
+          &larr; Back to Overview
         </Link>
         <Link
           href="/practice/mpi/"
-          className="px-4 py-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold uppercase tracking-wider"
+          className="px-5 py-2 rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 font-semibold transition-all shadow-sm"
         >
-          SOLVE MPI QUESTIONS (42+) &rarr;
+          Solve MPI Questions (42+) &rarr;
         </Link>
       </div>
     </div>

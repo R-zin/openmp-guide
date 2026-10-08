@@ -25,12 +25,12 @@ export function QuestionListView({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const categories = [
-    { id: 'all', label: 'ALL QUESTIONS', count: questions.length },
-    { id: 'conceptual', label: 'CONCEPTUAL', count: questions.filter((q) => q.category === 'conceptual').length },
-    { id: 'output-prediction', label: 'OUTPUT PREDICTION', count: questions.filter((q) => q.category === 'output-prediction').length },
-    { id: 'find-the-bug', label: 'FIND THE BUG', count: questions.filter((q) => q.category === 'find-the-bug').length },
-    { id: 'write-the-program', label: 'WRITE THE PROGRAM', count: questions.filter((q) => q.category === 'write-the-program').length },
-    { id: 'complexity-analysis', label: 'COMPLEXITY', count: questions.filter((q) => q.category === 'complexity-analysis').length },
+    { id: 'all', label: 'All Problems', count: questions.length },
+    { id: 'conceptual', label: 'Conceptual', count: questions.filter((q) => q.category === 'conceptual').length },
+    { id: 'output-prediction', label: 'Output Traces', count: questions.filter((q) => q.category === 'output-prediction').length },
+    { id: 'find-the-bug', label: 'Find Bug', count: questions.filter((q) => q.category === 'find-the-bug').length },
+    { id: 'write-the-program', label: 'Write Code', count: questions.filter((q) => q.category === 'write-the-program').length },
+    { id: 'complexity-analysis', label: 'Complexity', count: questions.filter((q) => q.category === 'complexity-analysis').length },
   ];
 
   const filteredQuestions =
@@ -41,36 +41,36 @@ export function QuestionListView({
   return (
     <div className="max-w-[860px] mx-auto space-y-8 font-sans">
       {/* Header */}
-      <div className="border-b border-[#000000] dark:border-[#FFFFFF] pb-6">
-        <div className="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-widest text-[#737373] mb-2">
-          <Link href="/practice/" className="hover:underline">
-            PRACTICE
+      <div className="pb-6 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-2">
+          <Link href="/practice/" className="hover:text-black dark:hover:text-white transition-colors">
+            Practice
           </Link>
           <span>/</span>
-          <span>{technology} QUESTIONS</span>
+          <span>{technology} Exam Questions</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold font-mono tracking-tight text-[#000000] dark:text-[#FFFFFF] mb-3">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900 dark:text-white mb-3">
           {title} ({questions.length})
         </h1>
-        <p className="text-sm sm:text-base text-[#737373] dark:text-[#A3A3A3] leading-relaxed">
+        <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
           {description}
         </p>
       </div>
 
-      {/* Category Filter Tabs */}
-      <div className="flex flex-wrap gap-2 font-mono text-xs">
+      {/* Apple-Style Pill Filter Tabs */}
+      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`px-3 py-1.5 border transition-colors ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
               selectedCategory === cat.id
-                ? 'border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold'
-                : 'border-[#E5E5E5] dark:border-[#262626] text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
+                ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-sm font-semibold'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
             }`}
           >
             <span>{cat.label}</span>{' '}
-            <span className="text-[10px] opacity-70">({cat.count})</span>
+            <span className="text-[10px] opacity-60 ml-1">({cat.count})</span>
           </button>
         ))}
       </div>
@@ -87,16 +87,16 @@ export function QuestionListView({
       </div>
 
       {/* Bottom Navigation */}
-      <div className="pt-6 border-t border-[#E5E5E5] dark:border-[#262626] flex justify-between font-mono text-xs">
+      <div className="pt-6 border-t border-black/[0.06] dark:border-white/[0.08] flex justify-between text-xs">
         <Link
           href="/practice/"
-          className="text-[#737373] hover:text-[#000000] dark:hover:text-[#FFFFFF]"
+          className="px-4 py-2 rounded-full border border-black/10 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all"
         >
-          &larr; BACK TO PRACTICE HUB
+          &larr; Back to Practice Hub
         </Link>
         <Link
           href={mockExamHref}
-          className="px-4 py-2 border border-[#000000] dark:border-[#FFFFFF] bg-[#000000] text-[#FFFFFF] dark:bg-[#FFFFFF] dark:text-[#000000] font-bold uppercase tracking-wider"
+          className="px-5 py-2 rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 font-semibold transition-all shadow-sm"
         >
           {mockExamLabel} &rarr;
         </Link>
