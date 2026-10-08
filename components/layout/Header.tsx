@@ -19,14 +19,14 @@ export function Header({
   isSidebarOpen,
 }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [completedCount, setCompletedCount] = useState(0);
   const pathname = usePathname();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+    // Default to dark mode unless explicitly saved as 'light'
+    const shouldBeDark = savedTheme ? savedTheme === 'dark' : true;
 
     if (shouldBeDark) {
       document.documentElement.classList.add('dark');
