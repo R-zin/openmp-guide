@@ -1,0 +1,208 @@
+---
+id: mpi-09-classic-algorithms
+title: Classic Parallel Algorithms in OpenMP
+slug: 09-classic-algorithms
+technology: openmp
+order: 9
+description: OpenMP implementations of parallel vector addition, dense matrix multiplication, parallel odd-even transposition sort, and breadth-first search.
+readingTimeMinutes: 18
+sections:
+  - id: vector-add
+    title: Vector Addition in OpenMP
+    level: 2
+  - id: matmul
+    title: Matrix Multiplication with Loop Collapse
+    level: 2
+  - id: odd-even-omp
+    title: Parallel Odd-Even Transposition Sort in OpenMP
+    level: 2
+  - id: bfs-omp
+    title: Parallel BFS Graph Search in OpenMP
+    level: 2
+---
+## Vector Addition in OpenMP
+
+Vector addition $Z = X + Y$ is completely independent across indices:
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+#define N 1000000
+
+int main() {
+    static double X[N], Y[N], Z[N];
+
+    /* Initialize in parallel to respect NUMA first-touch policy */
+    #pragma omp parallel for
+    for (int i = 0; i < N; i++) {
+        X[i] = 1.0;
+        Y[i] = 2.0;
+    }
+
+    double t0 = omp_get_wtime();
+
+    #pragma omp parallel for
+    for (int i = 0; i < N; i++) {
+        Z[i] = X[i] + Y[i];
+    }
+
+    double t1 = omp_get_wtime();
+    printf("Vector addition completed in %f seconds (Z[0] = %.1f)\n", t1 - t0, Z[0]);
+    return 0;
+}
+```
+
+---
+
+## Matrix Multiplication with Loop Collapse
+
+For dense matrix multiplication $C = A \times B$:
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+#define N 256
+
+int main() {
+    static double A[N][N], B[N][N], C[N][N];
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            A[i][j] = 1.0;
+            B[i][j] = 2.0;
+            C[i][j] = 0.0;
+        }
+    }
+
+    double t0 = omp_get_wtime();
+
+    /* Collapse outer two loops for maximal parallelism */
+    #pragma omp parallel for collapse(2) schedule(static)
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            double dot = 0.0;
+            for (int k = 0; k < N; k++) {
+                dot += A[i][k] * B[k][j];
+            }
+            C[i][j] = dot;
+        }
+    }
+
+    double t1 = omp_get_wtime();
+    printf("Matrix mult (%dx%d) completed in %f seconds (C[0][0] = %.1f)\n", N, N, t1 - t0, C[0][0]);
+    return 0;
+}
+```
+
+---
+
+## Parallel Odd-Even Transposition Sort in OpenMP
+
+In OpenMP, the $N$ phases are executed sequentially in an outer loop, while the $N/2$ independent pair swaps within each phase are parallelized with `#pragma omp parallel for`:
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+void odd_even_sort(int* a, int n) {
+    for (int phase = 0; phase < n; phase++) {
+        if (phase % 2 == 0) {
+            /* Even phase */
+            #pragma omp parallel for
+            for (int i = 1; i < n; i += 2) {
+                if (a[i - 1] > a[i]) {
+                    int tmp = a[i - 1]; a[i - 1] = a[i]; a[i] = tmp;
+                }
+            }
+        } else {
+            /* Odd phase */
+            #pragma omp parallel for
+            for (int i = 1; i < n - 1; i += 2) {
+                if (a[i] > a[i + 1]) {
+                    int tmp = a[i]; a[i] = a[i + 1]; a[i + 1] = tmp;
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    int arr[] = {34, 12, 5, 78, 1, 99, 23, 8};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    odd_even_sort(arr, n);
+
+    printf("Sorted by OpenMP: ");
+    for (int i = 0; i < n; i++) printf("%d ", arr[i]);
+    printf("\n");
+    return 0;
+}
+```
+
+---
+
+## Parallel BFS Graph Search in OpenMP
+
+In shared memory, level-synchronous BFS parallelizes neighbor expansion across all vertices currently in the frontier:
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+#define V 6
+
+int main() {
+    int adj[V][V] = {
+        {0, 1, 1, 0, 0, 0},
+        {1, 0, 0, 1, 1, 0},
+        {1, 0, 0, 0, 0, 1},
+        {0, 1, 0, 0, 0, 0},
+        {0, 1, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0, 0}
+    };
+
+    int visited[V] = {0};
+    int frontier[V] = {0};
+    int next_frontier[V] = {0};
+
+    visited[0] = 1;
+    frontier[0] = 1;
+
+    int level = 0;
+    while (1) {
+        int has_work = 0;
+
+        #pragma omp parallel for reduction(|:has_work)
+        for (int u = 0; u < V; u++) {
+            if (frontier[u]) {
+                for (int v = 0; v < V; v++) {
+                    if (adj[u][v] && !visited[v]) {
+                        #pragma omp critical
+                        {
+                            if (!visited[v]) {
+                                visited[v] = 1;
+                                next_frontier[v] = 1;
+                                has_work = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!has_work) break;
+
+        for (int i = 0; i < V; i++) {
+            frontier[i] = next_frontier[i];
+            next_frontier[i] = 0;
+        }
+        level++;
+    }
+
+    printf("Parallel BFS finished in %d levels. All reachable vertices visited.\n", level);
+    return 0;
+}
+```

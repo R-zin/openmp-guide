@@ -1,0 +1,77 @@
+---
+id: mpi-10-pitfalls-checklist
+title: "MPI Pitfalls & Exam Debugging Checklist"
+slug: 10-pitfalls-checklist
+technology: mpi
+order: 10
+description: Practical troubleshooting guide, root-cause analyses of deadlock scenarios, buffer truncation errors, communicator mismatch, and pre-submission checklist for lab exams.
+readingTimeMinutes: 14
+sections:
+  - id: deadlock-taxonomy
+    title: Taxonomy of MPI Deadlocks
+    level: 2
+  - id: common-errors
+    title: "Fatal MPI Errors & What They Mean"
+    level: 2
+  - id: debugging-checklist
+    title: The 10-Point Pre-Submission Exam Checklist
+    level: 2
+---
+## Taxonomy of MPI Deadlocks
+
+A deadlock occurs when processes are blocked waiting for events that will never happen. In MPI, deadlocks stem from three primary causes:
+
+### 1. Head-to-Head Send Deadlock
+```c
+/* DEADLOCK ON RENDEZVOUS BUFFERS */
+if (rank == 0) {
+    MPI_Send(bufA, N, MPI_INT, 1, 0, MPI_COMM_WORLD);
+    MPI_Recv(bufB, N, MPI_INT, 1, 0, MPI_COMM_WORLD, &status);
+} else if (rank == 1) {
+    MPI_Send(bufB, N, MPI_INT, 0, 0, MPI_COMM_WORLD);
+    MPI_Recv(bufA, N, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+}
+```
+- **Fix:** Invert order on Rank 1 (Recv then Send), or use `MPI_Sendrecv`.
+
+### 2. Collective Divergence Deadlock
+```c
+/* DEADLOCK: Collective enclosed in rank branch */
+if (rank == 0) {
+    MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);
+}
+/* Ranks 1..P-1 never call MPI_Bcast, Rank 0 waits forever */
+```
+- **Fix:** All processes in the communicator MUST invoke the collective routine.
+
+### 3. Tag / Source Mismatch Deadlock
+Rank 0 sends with `tag = 100`, but Rank 1 calls `MPI_Recv` with `tag = 200`. The message sits in the unexpected message queue, and Rank 1 blocks indefinitely.
+
+---
+
+## Fatal MPI Errors & What They Mean
+
+| Error Code / Message | Root Cause | Instant Fix |
+| :--- | :--- | :--- |
+| `MPI_ERR_TRUNCATE` | Receiver buffer capacity < message payload sent by sender | Ensure `recvcount` in `MPI_Recv` is $\ge$ sender's `sendcount` |
+| `MPI_ERR_RANK` | Target `dest` or `source` is negative or $\ge \text{comm\_sz}$ | Check partner bounds; guard boundary ranks with `MPI_PROC_NULL` |
+| `MPI_ERR_BUFFER` | Buffer pointer passed is `NULL` or points to invalid memory | Allocate memory (`malloc`) before calling communication routines |
+| `MPI_ERR_ROOT` | In `MPI_Bcast` or `MPI_Reduce`, processes specified different `root` values | Ensure all processes pass the exact same integer for `root` |
+| `MPI_ERR_COMM` | Invalid communicator handle or calling after `MPI_Finalize` | Check that `MPI_Init` was invoked; verify communicator handle |
+
+---
+
+## The 10-Point Pre-Submission Exam Checklist
+
+Before submitting any MPI code in a lab exam, check these 10 points:
+
+1. **[ ] Pointer in `MPI_Init`:** Did you write `MPI_Init(&argc, &argv)` with ampersands?
+2. **[ ] Matching `MPI_Finalize`:** Does every execution path end with `MPI_Finalize()` before returning?
+3. **[ ] Return Type of `Trap`:** Is `Trap` declared returning `double`, not `int`?
+4. **[ ] Sendcount in `MPI_Scatter`:** Is `sendcount` equal to elements *per process* (not total array size)?
+5. **[ ] Root in Collectives:** Do all processes agree on the exact same `root` rank?
+6. **[ ] Status Argument:** Did you pass `MPI_STATUS_IGNORE` or `&status` to `MPI_Recv` (7 arguments total)?
+7. **[ ] Boundary Guards in Odd-Even Sort:** Did you guard `partner < 0 || partner >= comm_sz` using `MPI_PROC_NULL`?
+8. **[ ] Flush on Ordered Prints:** Did you include `fflush(stdout)` before `MPI_Barrier`?
+9. **[ ] Clean Compilation:** Does the code compile with `mpicc -Wall -O2` with zero warnings?
+10. **[ ] Tested Process Counts:** Did you test running with $np = 1, 2, 4$ to verify process invariance?

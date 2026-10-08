@@ -1,0 +1,118 @@
+---
+id: omp-07-tasks
+title: OpenMP Tasking Model (Asynchronous Tasks)
+slug: 07-tasks
+technology: openmp
+order: 7
+description: Exploring dynamic task parallelism with #pragma omp task, taskwait, taskgroup, recursive Fibonacci, parallel tree traversal, and when tasks beat loops.
+readingTimeMinutes: 16
+sections:
+  - id: task-concept
+    title: The Tasking Abstraction
+    level: 2
+  - id: task-syntax
+    title: "Task Directives: task and taskwait"
+    level: 2
+  - id: fibonacci
+    title: Parallel Recursive Fibonacci Implementation
+    level: 2
+  - id: tree-traversal
+    title: Parallel Tree Traversal
+    level: 2
+  - id: when-tasks-beat-loops
+    title: When Tasks Beat Loop Parallelism
+    level: 2
+---
+## The Tasking Abstraction
+
+Introduced in OpenMP 3.0, the **Tasking Model** removes the restriction that parallel work must be structured as canonical for-loops with predetermined trip counts.
+
+A **Task** is an independent unit of computation that consists of:
+- Executable code block.
+- Associated data environment (captured variables: `firstprivate`, `shared`).
+- Internal control variables.
+
+When a thread encounters `#pragma omp task`, it packages the block into a task packet and deposits it into the runtime's **work queue**. Any idle worker thread can asynchronously pop and execute the task!
+
+---
+
+## Task Directives: task and taskwait
+
+### 1. `#pragma omp task`
+Defines an asynchronous task.
+```c
+#pragma omp task [clause ...]
+{
+    /* Task payload */
+}
+```
+- By default, variables in tasks are `firstprivate` unless declared `shared`.
+
+### 2. `#pragma omp taskwait`
+Suspends execution of the current thread until all immediate child tasks spawned by the current task have completed:
+```c
+#pragma omp taskwait
+```
+
+<Callout type="note" title="THE SINGLE DIRECTIVE PATTERN">
+Task generation loops must almost always be enclosed in `#pragma omp single`! Otherwise, every thread in the parallel team would duplicate task creation, leading to $P \times$ redundant work.
+</Callout>
+
+---
+
+## Parallel Recursive Fibonacci Implementation
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+int fib_serial(int n) {
+    if (n < 2) return n;
+    return fib_serial(n - 1) + fib_serial(n - 2);
+}
+
+int fib_parallel(int n) {
+    int x, y;
+    if (n < 2) return n;
+
+    /* Task Cutoff: Below n=20, execute serially to avoid task creation overhead */
+    if (n < 20) return fib_serial(n);
+
+    #pragma omp task shared(x)
+    x = fib_parallel(n - 1);
+
+    #pragma omp task shared(y)
+    y = fib_parallel(n - 2);
+
+    #pragma omp taskwait
+    return x + y;
+}
+
+int main() {
+    int n = 30;
+    int result = 0;
+
+    #pragma omp parallel num_threads(4)
+    {
+        #pragma omp single
+        result = fib_parallel(n);
+    }
+
+    printf("Fibonacci(%d) = %d\n", n, result);
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 fib_tasks.c -o fib_tasks`
+- **Run:** `./fib_tasks`
+- **Expected Output:** `Fibonacci(30) = 832040`
+
+---
+
+## When Tasks Beat Loop Parallelism
+
+OpenMP Tasks outperform worksharing loops in four critical scenarios:
+
+1. **Recursive Divide-and-Conquer:** Algorithms like QuickSort, MergeSort, and Barnes-Hut N-body simulation where tree depth is dynamic.
+2. **Unbounded Linked Data Structures:** Traversing linked lists, binary trees, or pointers where total node count is unknown prior to traversal.
+3. **Pipelined Workflows:** Asynchronous producer-consumer pipelines where tasks produce downstream jobs.
+4. **Graph Searching:** Irregular branch-and-bound searches where branches are dynamically pruned.

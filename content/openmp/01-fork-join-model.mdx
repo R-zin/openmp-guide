@@ -1,0 +1,119 @@
+---
+id: omp-01-fork-join-model
+title: "OpenMP Execution Model & Fork-Join Paradigm"
+slug: 01-fork-join-model
+technology: openmp
+order: 1
+description: Principles of multi-threaded shared-memory programming, POSIX processes vs lightweight threads, compiler flags, OMP_NUM_THREADS, and thread non-determinism.
+readingTimeMinutes: 14
+sections:
+  - id: fork-join
+    title: The Fork-Join Execution Paradigm
+    level: 2
+  - id: threads-vs-processes
+    title: Threads vs Processes in OS Architecture
+    level: 2
+  - id: compilation-flags
+    title: Compiling with -fopenmp and Environment Variables
+    level: 2
+  - id: hello-world
+    title: Complete OpenMP Hello World Implementation
+    level: 2
+  - id: nondeterminism
+    title: Understanding Thread Scheduling Non-Determinism
+    level: 2
+---
+## The Fork-Join Execution Paradigm
+
+OpenMP (*Open Multi-Processing*) is the industry-standard Application Program Interface (API) for shared-memory multi-threaded parallelism in C, C++, and Fortran.
+
+OpenMP programs execute under the **Fork-Join Model**:
+
+1. **Master Thread:** Execution begins as a single sequential thread (designated **Thread 0** or the *master thread*).
+2. **Fork:** When the master thread encounters a parallel construct (`#pragma omp parallel`), it **forks** a team of worker threads.
+3. **Parallel Team Execution:** All threads in the team execute the enclosed code block concurrently across physical CPU cores.
+4. **Join:** At the closing brace of the parallel region, an implicit synchronization barrier forces all worker threads to synchronize. The worker threads yield/sleep, and only the master thread continues sequentially.
+
+<Diagram type="fork-join" caption="OpenMP Fork-Join execution lifecycle transitioning between serial and parallel phases." />
+
+---
+
+## Threads vs Processes in OS Architecture
+
+Understanding the fundamental distinction between an operating system **process** (MPI) and a **thread** (OpenMP) is crucial for lab exams:
+
+| Feature | OS Process (MPI) | POSIX / OpenMP Thread |
+| :--- | :--- | :--- |
+| **Address Space** | Disjoint, private address space per process | Shared virtual address space across all threads in process |
+| **Creation Cost** | High (allocates page tables, file descriptors, heap) | Low (shares text, data, and heap segments) |
+| **Communication** | Explicit network message passing (`MPI_Send`) | Implicit reading/writing of shared memory variables |
+| **Synchronization** | Inter-process messages and barriers | Mutex locks, atomics, and lightweight barriers |
+| **Failure Domain** | If process crashes, other processes can continue | If a thread crashes (segfault), the entire process terminates |
+
+---
+
+## Compiling with -fopenmp and Environment Variables
+
+OpenMP directives are embedded as preprocessor pragmas:
+```c
+#pragma omp <directive> [clause[[,] clause] ...]
+```
+Because they use `#pragma`, if you compile without the OpenMP flag, the compiler simply ignores the pragmas and produces a valid sequential binary!
+
+### Compiler Flags:
+- **GCC / Clang:** `-fopenmp` (e.g. `gcc -fopenmp -O2 prog.c -o prog` or `clang -fopenmp prog.c -o prog`)
+
+### Environment Variables:
+- `OMP_NUM_THREADS`: Sets the default number of threads in parallel regions.
+```bash
+export OMP_NUM_THREADS=4
+./prog
+```
+- `OMP_DYNAMIC`: When set to `TRUE`, allows the runtime to dynamically adjust thread count based on system load.
+
+---
+
+## Complete OpenMP Hello World Implementation
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+int main() {
+    /* Query max threads available before parallel region */
+    printf("Max available threads: %d\n", omp_get_max_threads());
+
+    #pragma omp parallel num_threads(4)
+    {
+        int tid = omp_get_thread_num();
+        int nthreads = omp_get_num_threads();
+
+        printf("Hello from OpenMP thread %d of %d\n", tid, nthreads);
+    }
+
+    printf("Back in sequential master thread execution\n");
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 hello_omp.c -o hello_omp`
+- **Run:** `./hello_omp`
+- **Expected Output:** (Arbitrary thread interleaving)
+```text
+Max available threads: 8
+Hello from OpenMP thread 0 of 4
+Hello from OpenMP thread 2 of 4
+Hello from OpenMP thread 1 of 4
+Hello from OpenMP thread 3 of 4
+Back in sequential master thread execution
+```
+
+<HelloSimulator />
+
+---
+
+## Understanding Thread Scheduling Non-Determinism
+
+Inside a parallel construct, the OS thread scheduler maps threads onto physical hardware cores asynchronously. Consequently:
+- Thread execution arrival order is **inherently non-deterministic**.
+- Consecutive runs will produce different line ordering in terminal output.
+- Any unsynchronized concurrent write to a shared variable creates a catastrophic **Data Race**.

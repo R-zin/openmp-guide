@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F5F5F5;
+  --text-primary: #000000;
+  --text-secondary: #737373;
+  --border-color: #E5E5E5;
+  --border-strong: #000000;
+  --code-bg: #F5F5F5;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html.dark {
+  --bg-primary: #000000;
+  --bg-secondary: #121212;
+  --text-primary: #FFFFFF;
+  --text-secondary: #8C8C8C;
+  --border-color: #262626;
+  --border-strong: #FFFFFF;
+  --code-bg: #0D0D0D;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-radius: 0px !important;
+  box-shadow: none !important;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+code, pre, kbd, samp, .font-mono {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+/* Custom scrollbar in pure monochrome */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Shiki code block styles */
+pre.shiki {
+  background-color: var(--code-bg) !important;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+html.dark pre.shiki {
+  background-color: #0c0c0c !important;
+  border-color: #262626 !important;
+}
+
+/* Print Stylesheet for PDF revision */
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  header, aside, .no-print, button, nav, .print-hide {
+    display: none !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  pre, blockquote {
+    page-break-inside: avoid;
+  }
+
+  a {
+    text-decoration: underline;
+    color: #000000 !important;
+  }
+
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+  }
+
+  /* Don't show URL for local internal anchor jumps */
+  a[href^="#"]::after {
+    content: "";
+  }
 }

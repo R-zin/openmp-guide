@@ -1,0 +1,132 @@
+---
+id: mpi-05-reduction
+title: "OpenMP Reduction Clause & Pi Estimation"
+slug: 05-reduction
+technology: openmp
+order: 5
+description: Mathematical reduction semantics, predefined operators, custom reductions, and complete implementations of Numerical Pi Estimation and Trapezoidal Rule in OpenMP.
+readingTimeMinutes: 16
+sections:
+  - id: reduction-clause
+    title: Mechanics of the Reduction Clause
+    level: 2
+  - id: reduction-operators
+    title: "Predefined Reduction Operators & Identities"
+    level: 2
+  - id: pi-estimation
+    title: Numerical Pi Estimation (Rectangle Method)
+    level: 2
+  - id: trap-openmp
+    title: Trapezoidal Rule in OpenMP
+    level: 2
+  - id: custom-reductions
+    title: User-Defined Reductions (OpenMP 4.0+)
+    level: 2
+---
+## Mechanics of the Reduction Clause
+
+The `reduction(operator : variable_list)` clause provides the most scalable way to accumulate values across threads without lock overhead:
+
+```c
+reduction(+:sum)
+```
+
+### Execution Lifecycle:
+1. **Thread-Private Copy:** The OpenMP runtime allocates a private copy of each variable for every thread on its local stack.
+2. **Identity Initialization:** Each private copy is automatically initialized to the mathematical identity value corresponding to the operator (e.g. $0$ for `+`, $1$ for `*`).
+3. **Local Accumulation:** Inside the loop, each thread modifies its private accumulator at full register speed without any locks or memory bus contention.
+4. **Logarithmic Tree Combine:** At the end of the loop, private accumulators are merged into the original shared variable using a fast reduction tree.
+
+---
+
+## Predefined Reduction Operators & Identities
+
+| Operator | Mathematical Identity Value | Example Clause |
+| :--- | :--- | :--- |
+| `+` | `0` | `reduction(+:sum)` |
+| `*` | `1` | `reduction(*:prod)` |
+| `-` | `0` | `reduction(-:diff)` |
+| `&` | `~0` (all bits 1) | `reduction(&:mask)` |
+| `|` | `0` | `reduction(|:flags)` |
+| `^` | `0` | `reduction(^:checksum)` |
+| `&&` | `1` | `reduction(&&:all_valid)` |
+| `||` | `0` | `reduction(||:any_found)` |
+| `min` | Most positive representable value | `reduction(min:min_val)` |
+| `max` | Most negative representable value | `reduction(max:max_val)` |
+
+---
+
+## Numerical Pi Estimation (Rectangle Method)
+
+Mathematical formulation:
+$$\pi = \int_{0}^{1} \frac{4}{1 + x^2} \, dx$$
+
+Discretizing using $N$ rectangles with midpoint evaluation:
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+static long num_steps = 1000000;
+double step;
+
+int main() {
+    double sum = 0.0;
+    step = 1.0 / (double)num_steps;
+
+    double t0 = omp_get_wtime();
+
+    #pragma omp parallel for reduction(+:sum)
+    for (long i = 0; i < num_steps; i++) {
+        double x = (i + 0.5) * step;
+        sum += 4.0 / (1.0 + x * x);
+    }
+
+    double pi = step * sum;
+    double t1 = omp_get_wtime();
+
+    printf("Computed Pi = %.10f (Elapsed Time = %f s)\n", pi, t1 - t0);
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 pi_omp.c -o pi_omp`
+- **Run:** `./pi_omp`
+- **Expected Output:**
+```text
+Computed Pi = 3.1415926536 (Elapsed Time = 0.001820 s)
+```
+
+---
+
+## Trapezoidal Rule in OpenMP
+
+We can also implement the composite trapezoidal rule in shared memory using the reduction clause:
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+double f(double x) {
+    return 2.0 * x + 3.0;
+}
+
+int main() {
+    double a = 0.0, b = 2.0;
+    int n = 1024;
+    double h = (b - a) / (double)n;
+
+    double sum = (f(a) + f(b)) / 2.0;
+
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 1; i < n; i++) {
+        double x = a + i * h;
+        sum += f(x);
+    }
+
+    double integral = sum * h;
+    printf("OpenMP Trapezoidal Result = %f (Exact = 10.000000)\n", integral);
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 trap_omp.c -o trap_omp`
+- **Run:** `./trap_omp`

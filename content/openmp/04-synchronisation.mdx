@@ -1,0 +1,157 @@
+---
+id: mpi-04-synchronisation
+title: "OpenMP Synchronisation, Locks & Data Races"
+slug: 04-synchronisation
+technology: openmp
+order: 4
+description: Critical sections, atomic operations, barriers, ordered directives, explicit locks (omp_set_lock), data race conditions, and race resolution techniques.
+readingTimeMinutes: 18
+sections:
+  - id: race-conditions
+    title: Anatomy of a Data Race
+    level: 2
+  - id: critical-vs-atomic
+    title: Critical Sections vs Hardware Atomics
+    level: 2
+  - id: barrier-ordered
+    title: Barrier and Ordered Synchronization
+    level: 2
+  - id: explicit-locks
+    title: Explicit Locks with omp_lock_t
+    level: 2
+  - id: complete-code
+    title: Complete Counter Race Resolution Program
+    level: 2
+---
+## Anatomy of a Data Race
+
+A **Data Race** occurs when:
+1. Two or more concurrent threads access the same memory location simultaneously.
+2. At least one access is a **write**.
+3. The threads do not use any mutual exclusion or synchronization to coordinate accesses.
+
+In C, an operation like `count++` is NOT atomic. It expands into three distinct machine instructions:
+$$\text{LOAD } \text{reg} \leftarrow [\text{count}] \quad \longrightarrow \quad \text{ADD } \text{reg}, 1 \quad \longrightarrow \quad \text{STORE } [\text{count}] \leftarrow \text{reg}$$
+When multiple cores interleave these instructions, updates are dropped, causing silent, non-deterministic data corruption.
+
+<RaceConditionDemo />
+
+---
+
+## Critical Sections vs Hardware Atomics
+
+OpenMP provides two primary directives to eliminate data races on memory writes:
+
+### 1. `#pragma omp atomic`
+Protects a single scalar memory update using hardware-level atomic CPU instructions:
+```c
+#pragma omp atomic
+count++;
+```
+- **Supported Expressions:** `x++`, `x--`, `x += expr`, `x -= expr`, `x *= expr`, `x &= expr`, etc.
+- **Overhead:** Extremely low. The hardware memory controller handles synchronization at cache-line speed.
+
+### 2. `#pragma omp critical [(name)]`
+Enforces mutual exclusion over an arbitrary structured block of code:
+```c
+#pragma omp critical (db_update)
+{
+    total += val;
+    log_transaction(val);
+}
+```
+- Only one thread can execute inside any critical section with the same name simultaneously.
+- **Overhead:** High. Implements software lock acquisition, flushing memory caches.
+
+<Callout type="watch-out" title="AVOID CRITICAL SECTIONS INSIDE LOOPS">
+Placing `#pragma omp critical` inside an inner loop serializes all threads, causing massive lock contention that runs slower than single-threaded serial execution! Use `atomic` or the `reduction` clause instead.
+</Callout>
+
+---
+
+## Barrier and Ordered Synchronization
+
+### 1. `#pragma omp barrier`
+Explicit synchronization point. No thread can proceed past the barrier until all threads in the current team have arrived.
+
+### 2. `#pragma omp ordered`
+Used inside a `#pragma omp for ordered` loop. Enforces that the enclosed block executes in strict sequential iteration order ($i = 0, 1, 2, \dots, N-1$):
+```c
+#pragma omp parallel for ordered
+for (int i = 0; i < N; i++) {
+    #pragma omp ordered
+    printf("Result %d: %f\n", i, result[i]);
+}
+```
+
+---
+
+## Explicit Locks with omp_lock_t
+
+For complex data structures (e.g. hash tables, graph adjacency lists) where directives are insufficient, OpenMP provides explicit low-level locks:
+
+```c
+#include <omp.h>
+
+omp_lock_t my_lock;
+omp_init_lock(&my_lock);
+
+#pragma omp parallel
+{
+    omp_set_lock(&my_lock);
+    /* Critical section accessing shared data */
+    omp_unset_lock(&my_lock);
+}
+
+omp_destroy_lock(&my_lock);
+```
+
+<Callout type="watch-out" title="SIMPLE LOCKS ARE NOT RE-ENTRANT">
+`omp_lock_t` is NOT re-entrant! Calling `omp_set_lock(&my_lock)` twice on the same thread without un-setting causes immediate self-deadlock. Use `omp_nest_lock_t` for recursive functions.
+</Callout>
+
+---
+
+## Complete Counter Race Resolution Program
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+#define ITERATIONS 100000
+
+int main() {
+    int unsafe_count = 0;
+    int atomic_count = 0;
+    int reduction_count = 0;
+
+    /* 1. Unsafe Race Condition */
+    #pragma omp parallel for num_threads(4)
+    for (int i = 0; i < ITERATIONS; i++) {
+        unsafe_count++;
+    }
+
+    /* 2. Protected with Atomic */
+    #pragma omp parallel for num_threads(4)
+    for (int i = 0; i < ITERATIONS; i++) {
+        #pragma omp atomic
+        atomic_count++;
+    }
+
+    /* 3. Protected with Reduction */
+    #pragma omp parallel for num_threads(4) reduction(+:reduction_count)
+    for (int i = 0; i < ITERATIONS; i++) {
+        reduction_count++;
+    }
+
+    printf("Target Total Expected: %d\n", ITERATIONS);
+    printf("Unsafe Count (Data Race): %d (Lost %d updates)\n",
+           unsafe_count, ITERATIONS - unsafe_count);
+    printf("Atomic Count (Protected): %d\n", atomic_count);
+    printf("Reduction Count (Optimal): %d\n", reduction_count);
+
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 race_fix.c -o race_fix`
+- **Run:** `./race_fix`

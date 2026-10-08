@@ -1,0 +1,112 @@
+{
+  "id": "mock-mpi-exam",
+  "technology": "mpi",
+  "title": "MOCK LAB EXAM 1: MESSAGE PASSING INTERFACE (MPI)",
+  "totalMarks": 50,
+  "durationMinutes": 90,
+  "instructions": [
+    "All code must be written in standard C adhering to MPI-3 specifications.",
+    "Include all required headers (<stdio.h>, <stdlib.h>, <mpi.h>).",
+    "Every program must compile cleanly with 'mpicc -Wall -O2' without errors or warnings.",
+    "Run your programs with 'mpirun -np 4 ./binary'.",
+    "Marks will be deducted for race conditions, deadlock vulnerability, uninitialized buffers, or memory leaks."
+  ],
+  "tasks": [
+    {
+      "id": "mpi-task-1",
+      "title": "Task 1: Circular Token Ring with Boundary Modification",
+      "marks": 15,
+      "suggestedMinutes": 25,
+      "description": "Implement a parallel ring communication topology across P processes (np = 4). Rank 0 initializes a token with value 50. The token is passed sequentially around the ring: Rank 0 sends to Rank 1; Rank 1 adds its rank to the token and forwards to Rank 2; Rank 2 adds its rank and forwards to Rank 3; Rank 3 adds its rank and sends back to Rank 0. Rank 0 prints the final value. The implementation must be provably deadlock-free.",
+      "inputSpecification": "No stdin input. Hardcoded initial token = 50.",
+      "outputSpecification": "Each process prints: 'Rank <r> received token <val>, updated to <val+r>, forwarding to <next>'. Rank 0 finally prints: 'Ring complete! Final token at Rank 0 = <final>'.",
+      "sampleOutput": "Rank 0 starting token = 50, sending to Rank 1\nRank 1 received 50, updated to 51, sending to Rank 2\nRank 2 received 51, updated to 53, sending to Rank 3\nRank 3 received 53, updated to 56, sending to Rank 0\nRing complete! Final token at Rank 0 = 56",
+      "rubric": [
+        {
+          "criterion": "Correct MPI initialization, rank/size queries, and finalization",
+          "marks": 3
+        },
+        {
+          "criterion": "Correct calculation of predecessor and successor ring neighbors",
+          "marks": 3
+        },
+        {
+          "criterion": "Deadlock avoidance logic (Rank 0 sends first, then receives last)",
+          "marks": 5
+        },
+        {
+          "criterion": "Correct token arithmetic and formatted console reporting",
+          "marks": 4
+        }
+      ],
+      "compileCommand": "mpicc -O2 task1_ring.c -o task1_ring",
+      "runCommand": "mpirun -np 4 ./task1_ring",
+      "referenceCode": "#include <stdio.h>\n#include <mpi.h>\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    if (size < 2) {\n        if (rank == 0) printf(\"Error: Requires at least 2 processes.\\n\");\n        MPI_Finalize();\n        return 1;\n    }\n\n    int token = 0;\n    int next = (rank + 1) % size;\n    int prev = (rank - 1 + size) % size;\n\n    if (rank == 0) {\n        token = 50;\n        printf(\"Rank 0 starting token = %d, sending to Rank %d\\n\", token, next);\n        MPI_Send(&token, 1, MPI_INT, next, 0, MPI_COMM_WORLD);\n        MPI_Recv(&token, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n        printf(\"Ring complete! Final token at Rank 0 = %d\\n\", token);\n    } else {\n        MPI_Recv(&token, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n        int updated = token + rank;\n        printf(\"Rank %d received %d, updated to %d, sending to Rank %d\\n\", rank, token, updated, next);\n        MPI_Send(&updated, 1, MPI_INT, next, 0, MPI_COMM_WORLD);\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+      "explanation": "Rank 0 must transmit first to seed the token into the pipeline before blocking on receive. If all processes called MPI_Recv first, circular deadlock occurs. If all called MPI_Send first with large buffers, rendezvous deadlock occurs."
+    },
+    {
+      "id": "mpi-task-2",
+      "title": "Task 2: Parallel Trapezoidal Rule Integration with MPI_Reduce",
+      "marks": 15,
+      "suggestedMinutes": 30,
+      "description": "Write a parallel MPI program to approximate the definite integral of f(x) = 2x + 3 over the interval [a, b] = [0.0, 2.0] using the composite trapezoidal rule with n = 1024 trapezoids. Each process computes its local sub-interval integral. Use MPI_Reduce to aggregate results to the root process, where root = size - 1 (the maximum process rank, as required by PDC Lab 9). Measure and report parallel wall-clock execution time using MPI_Wtime().",
+      "inputSpecification": "Interval a = 0.0, b = 2.0, n = 1024 trapezoids.",
+      "outputSpecification": "Root process prints: Root Rank ID, total calculated integral, exact analytical value (10.000000), and elapsed execution time in seconds.",
+      "sampleOutput": "Root Rank 3 (MAX rank) Result: Estimated = 10.000000 (Exact = 10.000000)\nExecution Time = 0.000125 seconds",
+      "rubric": [
+        {
+          "criterion": "Correct Trapezoid function implementation with proper double return type",
+          "marks": 4
+        },
+        {
+          "criterion": "Correct interval partitioning: local_a and local_b per rank",
+          "marks": 4
+        },
+        {
+          "criterion": "Proper collective aggregation using MPI_Reduce to root = size - 1",
+          "marks": 4
+        },
+        {
+          "criterion": "Accurate timing measurement with MPI_Wtime and output verification",
+          "marks": 3
+        }
+      ],
+      "compileCommand": "mpicc -O2 task2_trap.c -o task2_trap",
+      "runCommand": "mpirun -np 4 ./task2_trap",
+      "referenceCode": "#include <stdio.h>\n#include <mpi.h>\n\ndouble f(double x) {\n    return 2.0 * x + 3.0;\n}\n\ndouble Trap(double left, double right, int count, double h) {\n    double estimate = (f(left) + f(right)) / 2.0;\n    for (int i = 1; i < count; i++) {\n        double x = left + i * h;\n        estimate += f(x);\n    }\n    return estimate * h;\n}\n\nint main(int argc, char** argv) {\n    int rank, size;\n    double a = 0.0, b = 2.0;\n    int n = 1024;\n\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    double start_time = MPI_Wtime();\n\n    double h = (b - a) / (double)n;\n    int local_n = n / size;\n    double local_a = a + rank * local_n * h;\n    double local_b = local_a + local_n * h;\n\n    double local_integral = Trap(local_a, local_b, local_n, h);\n    double total_integral = 0.0;\n    int root = size - 1;\n\n    MPI_Reduce(&local_integral, &total_integral, 1, MPI_DOUBLE, MPI_SUM, root, MPI_COMM_WORLD);\n\n    double end_time = MPI_Wtime();\n\n    if (rank == root) {\n        printf(\"Root Rank %d (MAX rank) Result: Estimated = %f (Exact = 10.000000)\\n\", root, total_integral);\n        printf(\"Execution Time = %f seconds\\n\", end_time - start_time);\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+      "explanation": "Note the Trap function declaration returning double (not int). Partitioning calculates local_a = a + rank * local_n * h, guaranteeing disjoint coverage of the entire interval."
+    },
+    {
+      "id": "mpi-task-3",
+      "title": "Task 3: Parallel Odd-Even Transposition Sort with MPI_Sendrecv",
+      "marks": 20,
+      "suggestedMinutes": 35,
+      "description": "Implement Parallel Odd-Even Transposition Sort on an unsorted array of N = 16 integers across 4 processes. Test array: A = [15, 29, 100, 23, -14, 45, 178, 192, 246, -118, 0, 7, 1, 10, 25, 34]. Process 0 scatters 4 elements to each process. Each process sorts its local array with qsort, executes size = 4 alternating even and odd communication phases using MPI_Sendrecv with Merge-Low and Merge-High, and Process 0 gathers and prints the final sorted array.",
+      "inputSpecification": "Predefined 16-element array A distributed equally (4 keys per process).",
+      "outputSpecification": "Process 0 prints the initial array and final sorted array.",
+      "sampleOutput": "Initial Array: 15 29 100 23 -14 45 178 192 246 -118 0 7 1 10 25 34\nSorted Array:  -118 -14 0 1 7 10 15 23 25 29 34 45 100 178 192 246",
+      "rubric": [
+        {
+          "criterion": "Correct initial scatter and local sorting via qsort",
+          "marks": 4
+        },
+        {
+          "criterion": "Accurate partner index logic for even and odd phases with boundary checks",
+          "marks": 5
+        },
+        {
+          "criterion": "Correct Merge-Low and Merge-High implementation",
+          "marks": 6
+        },
+        {
+          "criterion": "Deadlock-free communication using MPI_Sendrecv and final gather verification",
+          "marks": 5
+        }
+      ],
+      "compileCommand": "mpicc -O2 task3_sort.c -o task3_sort",
+      "runCommand": "mpirun -np 4 ./task3_sort",
+      "referenceCode": "#include <stdio.h>\n#include <stdlib.h>\n#include <mpi.h>\n\nint cmp(const void* a, const void* b) {\n    return (*(int*)a - *(int*)b);\n}\n\nvoid merge_low(int* my_keys, int* recv_keys, int n) {\n    int* temp = (int*)malloc(n * sizeof(int));\n    int i = 0, j = 0, k = 0;\n    while (k < n) {\n        if (my_keys[i] <= recv_keys[j]) temp[k++] = my_keys[i++];\n        else temp[k++] = recv_keys[j++];\n    }\n    for (i = 0; i < n; i++) my_keys[i] = temp[i];\n    free(temp);\n}\n\nvoid merge_high(int* my_keys, int* recv_keys, int n) {\n    int* temp = (int*)malloc(n * sizeof(int));\n    int i = n - 1, j = n - 1, k = n - 1;\n    while (k >= 0) {\n        if (my_keys[i] >= recv_keys[j]) temp[k--] = my_keys[i--];\n        else temp[k--] = recv_keys[j--];\n    }\n    for (i = 0; i < n; i++) my_keys[i] = temp[i];\n    free(temp);\n}\n\nint main(int argc, char** argv) {\n    int rank, size;\n    int N = 16;\n    int A[16] = {15, 29, 100, 23, -14, 45, 178, 192, 246, -118, 0, 7, 1, 10, 25, 34};\n\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    int n_local = N / size;\n    int* local = (int*)malloc(n_local * sizeof(int));\n    int* temp = (int*)malloc(n_local * sizeof(int));\n\n    if (rank == 0) {\n        printf(\"Initial Array: \");\n        for (int i = 0; i < N; i++) printf(\"%d \", A[i]);\n        printf(\"\\n\");\n    }\n\n    MPI_Scatter(A, n_local, MPI_INT, local, n_local, MPI_INT, 0, MPI_COMM_WORLD);\n    qsort(local, n_local, sizeof(int), cmp);\n\n    for (int phase = 0; phase < size; phase++) {\n        int partner;\n        if (phase % 2 == 0) {\n            partner = (rank % 2 == 0) ? rank + 1 : rank - 1;\n        } else {\n            partner = (rank % 2 == 1) ? rank + 1 : rank - 1;\n        }\n\n        if (partner >= 0 && partner < size) {\n            MPI_Sendrecv(local, n_local, MPI_INT, partner, 0,\n                         temp, n_local, MPI_INT, partner, 0,\n                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n            if (rank < partner) {\n                merge_low(local, temp, n_local);\n            } else {\n                merge_high(local, temp, n_local);\n            }\n        }\n    }\n\n    MPI_Gather(local, n_local, MPI_INT, A, n_local, MPI_INT, 0, MPI_COMM_WORLD);\n\n    if (rank == 0) {\n        printf(\"Sorted Array:  \");\n        for (int i = 0; i < N; i++) printf(\"%d \", A[i]);\n        printf(\"\\n\");\n    }\n\n    free(local);\n    free(temp);\n    MPI_Finalize();\n    return 0;\n}",
+      "explanation": "Guarantees global sort in size = 4 phases. MPI_Sendrecv eliminates send-receive ordering race conditions. Partner checks ensure processes with partner < 0 or partner >= size safely idle."
+    }
+  ]
+}

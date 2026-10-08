@@ -1,0 +1,646 @@
+[
+  {
+    "id": "mpi-c-01",
+    "technology": "mpi",
+    "topicRef": "01-basics",
+    "category": "conceptual",
+    "title": "SPMD vs MIMD Architecture in Distributed Computing",
+    "prompt": "Explain the relationship between Flynn's MIMD classification and the Single Program, Multiple Data (SPMD) programming model used by MPI.",
+    "solutionSteps": [
+      "Hardware Perspective: Cluster systems fall under MIMD (Multiple Instruction, Multiple Data) because each computing node has an independent CPU fetching its own instruction stream and operating on its own private memory.",
+      "Software Model: MPI enforces the SPMD (Single Program, Multiple Data) abstraction. A single compiled binary executable is distributed and executed across all nodes.",
+      "Execution Divergence: Although each process starts from the identical binary, processes differentiate their runtime execution paths using conditional branching on their unique process identifier: if (my_rank == 0) { ... } else { ... }."
+    ],
+    "watchOutTip": "Do not confuse SPMD with SIMD. In SIMD (e.g. GPU vector units), execution units lock-step execute the exact same instruction simultaneously. In SPMD, processes execute asynchronously at independent clock speeds."
+  },
+  {
+    "id": "mpi-c-02",
+    "technology": "mpi",
+    "topicRef": "02-foundations",
+    "category": "conceptual",
+    "title": "Communicators and MPI_COMM_WORLD",
+    "prompt": "What is an MPI communicator? What two primary components constitute a communicator, and why is communicator caching/scoping essential in large software libraries?",
+    "solutionSteps": [
+      "Definition: An MPI Communicator is an opaque handle (type MPI_Comm) representing a communication domain that encompasses a collection of processes.",
+      "Two Constituents: 1. A process group (an ordered set of process IDs with assigned ranks 0 to size-1). 2. A communication context (an internal unique tag space preventing message interference across distinct program modules).",
+      "Library Isolation: If a third-party linear algebra solver used raw ranks and tags on MPI_COMM_WORLD, its internal messages could collide with application messages having the same tag. Communicators (via MPI_Comm_dup or MPI_Comm_split) create isolated communication universes."
+    ]
+  },
+  {
+    "id": "mpi-c-03",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "conceptual",
+    "title": "Eager vs Rendezvous Protocol in Blocking Communication",
+    "prompt": "MPI_Send is described as 'blocking'. Does this guarantee that the destination process has actually received the message before MPI_Send returns? Explain using eager and rendezvous protocols.",
+    "solutionSteps": [
+      "Strict MPI Standard Definition: A blocking send returns when the user's send buffer can be safely overwritten or reused without corrupting the message. It does NOT guarantee delivery to the receiver.",
+      "Eager Protocol (Small Messages): The runtime copies the message directly into an internal system buffer on the sender or network interface and returns immediately, before any MPI_Recv is posted.",
+      "Rendezvous Protocol (Large Messages): The sender transmits an envelope/handshake. The sender blocks until the destination posts a matching MPI_Recv and acknowledges readiness. Only then is payload data copied."
+    ],
+    "watchOutTip": "Never rely on buffering! Code that succeeds for small test arrays can deadlock without warning on larger inputs when the MPI implementation transitions to the rendezvous protocol."
+  },
+  {
+    "id": "mpi-c-04",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "conceptual",
+    "title": "MPI_PROC_NULL Semantics and Utility",
+    "prompt": "What is MPI_PROC_NULL and how does it simplify boundary conditions in ring and pipeline communications?",
+    "solutionSteps": [
+      "Definition: MPI_PROC_NULL is a predefined constant rank recognized by all MPI point-to-point and collective routines.",
+      "Behavior: Any send directed to MPI_PROC_NULL returns immediately with success without transmitting data. Any receive from MPI_PROC_NULL returns immediately, leaving the buffer untouched and setting status.MPI_SOURCE = MPI_PROC_NULL.",
+      "Utility: Eliminates special-casing if statements at array boundaries. In odd-even sort or a 1D pipeline, Rank 0 can simply set left_neighbor = MPI_PROC_NULL and execute the exact same Sendrecv call as intermediate processes."
+    ]
+  },
+  {
+    "id": "mpi-c-05",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "conceptual",
+    "title": "Collective Communication Rules and Tag Absence",
+    "prompt": "Why do MPI collective communication routines (such as MPI_Bcast and MPI_Reduce) not include message tags? What are the three cardinal rules for invoking collectives?",
+    "solutionSteps": [
+      "Absence of Tags: Collective routines match based strictly on the sequence of collective calls made on the communicator. Processors must execute collectives in the exact same program order, making tags redundant.",
+      "Rule 1: All processes in the specified communicator MUST call the collective routine.",
+      "Rule 2: Every process must supply matching arguments (e.g. identical root rank, identical operation operator).",
+      "Rule 3: Collective calls must not be enclosed in conditional branches where only a subset of ranks execute them (unless using a partitioned sub-communicator created with MPI_Comm_split)."
+    ]
+  },
+  {
+    "id": "mpi-c-06",
+    "technology": "mpi",
+    "topicRef": "05-data-distributions",
+    "category": "conceptual",
+    "title": "Block vs Cyclic vs Block-Cyclic Decomposition Trade-offs",
+    "prompt": "Compare Block, Cyclic, and Block-Cyclic distributions of a 1D array across P processes in terms of data locality and computational load balance for triangular matrix algorithms.",
+    "solutionSteps": [
+      "Block Distribution: Process i receives contiguous slice [i*(N/P) .. (i+1)*(N/P)-1]. Excellent spatial locality and stride-1 cache access. However, for triangular matrices (where row length shrinks), high-rank processes finish early, leading to severe idle load imbalance.",
+      "Cyclic Distribution: Element k assigned to rank (k % P). Interleaves work evenly so all processors share both long and short rows in triangular systems. However, stride-P memory access destroys cache locality and requires fine-grained scatter/gather communication.",
+      "Block-Cyclic Distribution: Divides array into blocks of size B, distributing blocks cyclically. Yields the optimal compromise: maintains block spatial locality within cache lines while ensuring balanced load distribution across processes (foundation of ScaLAPACK)."
+    ]
+  },
+  {
+    "id": "mpi-c-07",
+    "technology": "mpi",
+    "topicRef": "07-odd-even-sort",
+    "category": "conceptual",
+    "title": "Odd-Even Transposition Sort Phase Convergence",
+    "prompt": "State the theorem governing the number of phases required to sort a distributed list of N keys across P processes using parallel odd-even transposition sort.",
+    "solutionSteps": [
+      "Theorem: Given a distributed list of keys partitioned equally across P processes, after P phases of alternating even and odd pair exchanges, the entire list is globally sorted.",
+      "Local Step: Prior to phase 0, each process sorts its local block of N/P keys sequentially using qsort (cost O((N/P) log(N/P))).",
+      "Phase Step: In each phase, participating pairs execute a Compare-Split (Merge-Low / Merge-High) exchange using MPI_Sendrecv. After P phases, no element can be out of position."
+    ]
+  },
+  {
+    "id": "mpi-c-08",
+    "technology": "mpi",
+    "topicRef": "08-matrix-multiplication",
+    "category": "conceptual",
+    "title": "Hadamard Product vs True Matrix Multiplication",
+    "prompt": "Distinguish between Hadamard Matrix Multiplication and Standard Matrix-Matrix Multiplication in terms of mathematical definition, parallel decomposition, and communication overhead.",
+    "solutionSteps": [
+      "Mathematical Definition: Hadamard product C = A o B is element-wise: C[i][j] = A[i][j] * B[i][j]. Standard matrix product C = A x B is row-by-column inner product: C[i][j] = sum_k (A[i][k] * B[k][j]).",
+      "Parallel Communication: Hadamard multiplication is embarrassingly parallel. If A and B have matching distributions, each process multiplies its local sub-matrix with ZERO inter-process communication.",
+      "True Matrix Product: Requires elements from row i of A to meet elements from column j of B across all processes, necessitating global broadcast/allgather or Cannon's 2D grid circular shifts."
+    ]
+  },
+  {
+    "id": "mpi-op-01",
+    "technology": "mpi",
+    "topicRef": "02-foundations",
+    "category": "output-prediction",
+    "title": "Predict Output: Branching Arithmetic (Lab 8 Task 2)",
+    "prompt": "Predict the exact output of the following MPI program executed with 5 processes (np = 5):\n\n#include <stdio.h>\n#include <mpi.h>\nint main(int argc, char** argv) {\n    int rank, a = 10, b = 4, c;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    if (rank == 0) c = a + b;\n    else if (rank == 1) c = a - b;\n    else c = a * b;\n    printf(\"Rank %d: c = %d\\n\", rank, c);\n    MPI_Finalize();\n    return 0;\n}",
+    "code": "#include <stdio.h>\n#include <mpi.h>\nint main(int argc, char** argv) {\n    int rank, a = 10, b = 4, c;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    if (rank == 0) c = a + b;\n    else if (rank == 1) c = a - b;\n    else c = a * b;\n    printf(\"Rank %d: c = %d\\n\", rank, c);\n    MPI_Finalize();\n    return 0;\n}",
+    "solutionSteps": [
+      "Step 1: Comm_size is 5 (ranks 0, 1, 2, 3, 4).",
+      "Step 2: Rank 0 executes c = 10 + 4 = 14.",
+      "Step 3: Rank 1 executes c = 10 - 4 = 6.",
+      "Step 4: Ranks 2, 3, 4 execute the else branch: c = 10 * 4 = 40.",
+      "Step 5: Each process prints its line. Since stdout is asynchronous, lines may print in arbitrary order, but each rank outputs its specific calculation."
+    ],
+    "expectedOutput": "Rank 0: c = 14\nRank 1: c = 6\nRank 2: c = 40\nRank 3: c = 40\nRank 4: c = 40\n(Note: Line order between ranks 0-4 is nondeterministic)"
+  },
+  {
+    "id": "mpi-op-02",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "output-prediction",
+    "title": "Predict Output: Token Pass with Tag Discrimination",
+    "prompt": "Given np = 2. Predict the output of this point-to-point token exchange:\n\n#include <stdio.h>\n#include <mpi.h>\nint main(int argc, char** argv) {\n    int rank, val = 0;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    if (rank == 0) {\n        val = 50;\n        MPI_Send(&val, 1, MPI_INT, 1, 99, MPI_COMM_WORLD);\n    } else if (rank == 1) {\n        MPI_Recv(&val, 1, MPI_INT, 0, 99, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n        val += 25;\n    }\n    printf(\"Rank %d has val = %d\\n\", rank, val);\n    MPI_Finalize();\n    return 0;\n}",
+    "solutionSteps": [
+      "Step 1: Rank 0 initializes val = 50 and sends 1 integer to Rank 1 with tag 99.",
+      "Step 2: Rank 1 starts with val = 0, blocks on MPI_Recv waiting for source 0 with tag 99.",
+      "Step 3: Rank 1 receives 50, then executes val += 25, resulting in val = 75.",
+      "Step 4: Rank 0 prints val = 50. Rank 1 prints val = 75."
+    ],
+    "expectedOutput": "Rank 0 has val = 50\nRank 1 has val = 75"
+  },
+  {
+    "id": "mpi-op-03",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "output-prediction",
+    "title": "Predict Output: MPI_Scatter Array Elements (Lab 8 Task 4a)",
+    "prompt": "Predict the output when array A[4] = {10, 85, 150, 42} is scattered across 4 processes:\n\n#include <stdio.h>\n#include <mpi.h>\nint main(int argc, char** argv) {\n    int rank, recv_val;\n    int A[4] = {10, 85, 150, 42};\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Scatter(A, 1, MPI_INT, &recv_val, 1, MPI_INT, 0, MPI_COMM_WORLD);\n    printf(\"Rank %d received %d\\n\", rank, recv_val);\n    MPI_Finalize();\n    return 0;\n}",
+    "solutionSteps": [
+      "Step 1: Root process is 0 with source array {10, 85, 150, 42}.",
+      "Step 2: sendcount is 1 and recvcount is 1. One element is dispatched to each process based on rank index.",
+      "Step 3: Rank 0 receives A[0] = 10; Rank 1 receives A[1] = 85; Rank 2 receives A[2] = 150; Rank 3 receives A[3] = 42."
+    ],
+    "expectedOutput": "Rank 0 received 10\nRank 1 received 85\nRank 2 received 150\nRank 3 received 42\n(Lines may appear in arbitrary rank order)"
+  },
+  {
+    "id": "mpi-op-04",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "output-prediction",
+    "title": "Predict Output: MPI_Scan Prefix Sums",
+    "prompt": "Assume np = 4. What will each rank print after MPI_Scan with local input value = (rank + 1) * 2?\n\n#include <stdio.h>\n#include <mpi.h>\nint main(int argc, char** argv) {\n    int rank, in_val, out_val;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    in_val = (rank + 1) * 2; // Rank 0: 2, Rank 1: 4, Rank 2: 6, Rank 3: 8\n    MPI_Scan(&in_val, &out_val, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);\n    printf(\"Rank %d: prefix = %d\\n\", rank, out_val);\n    MPI_Finalize();\n    return 0;\n}",
+    "solutionSteps": [
+      "Step 1: Local values are Rank 0: 2, Rank 1: 4, Rank 2: 6, Rank 3: 8.",
+      "Step 2: MPI_Scan computes inclusive prefix sum across ranks 0..rank.",
+      "Step 3: Rank 0: 2 = 2.",
+      "Step 4: Rank 1: 2 + 4 = 6.",
+      "Step 5: Rank 2: 2 + 4 + 6 = 12.",
+      "Step 6: Rank 3: 2 + 4 + 6 + 8 = 20."
+    ],
+    "expectedOutput": "Rank 0: prefix = 2\nRank 1: prefix = 6\nRank 2: prefix = 12\nRank 3: prefix = 20"
+  },
+  {
+    "id": "mpi-op-05",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "output-prediction",
+    "title": "Predict Output: MPI_Allreduce vs MPI_Reduce",
+    "prompt": "Given 4 processes, each with local = rank * 10. Process 0 executes MPI_Reduce into total, and all processes execute MPI_Allreduce into all_total. Predict the printed values on Rank 2 and Rank 0.",
+    "solutionSteps": [
+      "Step 1: Local values: R0=0, R1=10, R2=20, R3=30. Sum = 60.",
+      "Step 2: In MPI_Reduce(..., root=0), total on Rank 0 becomes 60. On Rank 2, total remains uninitialized (or 0).",
+      "Step 3: In MPI_Allreduce(...), all_total on EVERY process (including Rank 2 and Rank 0) becomes 60.",
+      "Step 4: Output for Rank 0: total=60, all_total=60. Output for Rank 2: all_total=60."
+    ],
+    "expectedOutput": "On Rank 0: total = 60, all_total = 60\nOn Rank 2: all_total = 60 (total on Rank 2 is undefined/unmodified)"
+  },
+  {
+    "id": "mpi-op-06",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "output-prediction",
+    "title": "Predict Output: Ring with Rank Decrement",
+    "prompt": "Assume np = 4. Rank 0 initializes token = 100. Each process receives from (rank-1+4)%4, subtracts its own rank, and sends to (rank+1)%4. What token value arrives back at Rank 0?",
+    "solutionSteps": [
+      "Step 1: Rank 0 sends 100 to Rank 1. Then Rank 0 waits for message from Rank 3.",
+      "Step 2: Rank 1 receives 100, subtracts rank (1) -> token = 99. Sends 99 to Rank 2.",
+      "Step 3: Rank 2 receives 99, subtracts rank (2) -> token = 97. Sends 97 to Rank 3.",
+      "Step 4: Rank 3 receives 97, subtracts rank (3) -> token = 94. Sends 94 to Rank 0.",
+      "Step 5: Rank 0 receives 94."
+    ],
+    "expectedOutput": "Token completed ring, received at Rank 0 = 94"
+  },
+  {
+    "id": "mpi-op-07",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "output-prediction",
+    "title": "Predict Output: MPI_Allgather Vector Reconstruction",
+    "prompt": "4 processes each hold 2 elements: Rank 0: [1, 2], Rank 1: [3, 4], Rank 2: [5, 6], Rank 3: [7, 8]. MPI_Allgather is called with sendcount=2, recvcount=2. What is in the receive buffer of Rank 3?",
+    "solutionSteps": [
+      "Step 1: MPI_Allgather gathers 2 elements from each of the 4 processes and places the concatenated result on ALL processes.",
+      "Step 2: Total received elements on every process = 2 * 4 = 8 elements.",
+      "Step 3: Elements are stored in order of ascending rank.",
+      "Step 4: The receive buffer on Rank 3 (and all other ranks) is [1, 2, 3, 4, 5, 6, 7, 8]."
+    ],
+    "expectedOutput": "Rank 3 buffer: [1, 2, 3, 4, 5, 6, 7, 8]"
+  },
+  {
+    "id": "mpi-op-08",
+    "technology": "mpi",
+    "topicRef": "02-foundations",
+    "category": "output-prediction",
+    "title": "Predict Output: Barrier Synchronization Effect",
+    "prompt": "Consider two loops: loop 1 prints 'A <rank>' without barrier; loop 2 prints 'B <rank>' where rank 0 sleeps 1 sec before MPI_Barrier. Can 'B 0' print before 'A 3'?",
+    "solutionSteps": [
+      "Step 1: Without a barrier between loop 1 and loop 2, fast processes can finish loop 1 and enter loop 2 before slow processes even start loop 1.",
+      "Step 2: However, if an MPI_Barrier separates phase A and phase B, NO process can enter phase B until ALL processes have exited phase A.",
+      "Step 3: Therefore, with an intervening barrier, 'B 0' can NEVER print before 'A 3'."
+    ],
+    "expectedOutput": "With an intervening MPI_Barrier: No, all 'A' messages must complete across all ranks before any 'B' message can print."
+  },
+  {
+    "id": "mpi-fb-01",
+    "technology": "mpi",
+    "topicRef": "06-trapezoidal-rule",
+    "category": "find-the-bug",
+    "title": "Bug in Trapezoidal Function Return Type (Lecture Slide Mistake)",
+    "prompt": "Identify the critical bug in this function signature taken from lecture slides:\n\nint Trap(double a, double b, int n, double h) {\n    double integral = (f(a) + f(b)) / 2.0;\n    int x;\n    for (int i = 1; i <= n-1; i++) {\n        x = a + i * h;\n        integral += f(x);\n    }\n    integral = integral * h;\n    return integral;\n}",
+    "code": "int Trap(double a, double b, int n, double h) {\n    double integral = (f(a) + f(b)) / 2.0;\n    int x;\n    for (int i = 1; i <= n-1; i++) {\n        x = a + i * h;\n        integral += f(x);\n    }\n    integral = integral * h;\n    return integral;\n}",
+    "bugLine": 1,
+    "solutionSteps": [
+      "Bug 1 (Return Type): Function is declared returning 'int' instead of 'double'. Returning int casts 'integral' to integer, truncating all fractional components and destroying numerical precision.",
+      "Bug 2 (Loop variable x): 'int x;' truncates grid evaluation points to integers (e.g. 0.5 becomes 0), evaluating f at completely incorrect abscissae.",
+      "Fix: Declare function as 'double Trap(double a, double b, int n, double h)' and declare 'double x;'."
+    ],
+    "correctCode": "double Trap(double a, double b, int n, double h) {\n    double integral = (f(a) + f(b)) / 2.0;\n    double x;\n    for (int i = 1; i <= n - 1; i++) {\n        x = a + i * h;\n        integral += f(x);\n    }\n    integral = integral * h;\n    return integral;\n}",
+    "watchOutTip": "Watch out for this exact error in lecture slides! It is frequently tested in lab exams as a 'find the error and fix it' question."
+  },
+  {
+    "id": "mpi-fb-02",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "find-the-bug",
+    "title": "Head-to-Head MPI_Send Deadlock",
+    "prompt": "Why does the following 2-process code deadlock when N = 1,000,000?\n\nif (my_rank == 0) {\n    MPI_Send(send_buf, N, MPI_INT, 1, 0, MPI_COMM_WORLD);\n    MPI_Recv(recv_buf, N, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n} else if (my_rank == 1) {\n    MPI_Send(send_buf, N, MPI_INT, 0, 0, MPI_COMM_WORLD);\n    MPI_Recv(recv_buf, N, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n}",
+    "code": "if (my_rank == 0) {\n    MPI_Send(send_buf, N, MPI_INT, 1, 0, MPI_COMM_WORLD);\n    MPI_Recv(recv_buf, N, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n} else if (my_rank == 1) {\n    MPI_Send(send_buf, N, MPI_INT, 0, 0, MPI_COMM_WORLD);\n    MPI_Recv(recv_buf, N, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n}",
+    "bugLine": 2,
+    "solutionSteps": [
+      "Bug: Symmetrical send ordering. Both processes execute MPI_Send before posting MPI_Recv.",
+      "For small N, the MPI eager buffer absorbs the message. But for large N (1,000,000 ints = 4MB), MPI switches to the rendezvous protocol.",
+      "Rank 0 blocks waiting for Rank 1 to post MPI_Recv; Rank 1 blocks waiting for Rank 0. Neither can reach line 3. Circular dependency causes permanent deadlock.",
+      "Fix: Either invert order on Rank 1 (Rank 1 calls MPI_Recv first), or replace with MPI_Sendrecv."
+    ],
+    "correctCode": "if (my_rank == 0) {\n    MPI_Send(send_buf, N, MPI_INT, 1, 0, MPI_COMM_WORLD);\n    MPI_Recv(recv_buf, N, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n} else if (my_rank == 1) {\n    MPI_Recv(recv_buf, N, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n    MPI_Send(send_buf, N, MPI_INT, 0, 0, MPI_COMM_WORLD);\n}"
+  },
+  {
+    "id": "mpi-fb-03",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "find-the-bug",
+    "title": "Incorrect sendcount in MPI_Scatter",
+    "prompt": "Find the bug in this MPI_Scatter call where array data has 16 integers across 4 processes:\n\nint data[16];\nint local_data[4];\n// ... initialized on rank 0 ...\nMPI_Scatter(data, 16, MPI_INT, local_data, 4, MPI_INT, 0, MPI_COMM_WORLD);",
+    "code": "int data[16];\nint local_data[4];\nMPI_Scatter(data, 16, MPI_INT, local_data, 4, MPI_INT, 0, MPI_COMM_WORLD);",
+    "bugLine": 3,
+    "solutionSteps": [
+      "Bug: sendcount argument in MPI_Scatter is specified as 16 instead of 4.",
+      "Rule: sendcount in MPI_Scatter denotes the number of elements sent to EACH individual process, NOT the total array count.",
+      "Passing 16 instructs MPI to send 16 elements to each of the 4 processes (requiring 64 elements in data). This causes a buffer overflow segmentation fault or MPI_ERR_TRUNCATE.",
+      "Fix: Change sendcount from 16 to 4 (or 16 / comm_sz)."
+    ],
+    "correctCode": "MPI_Scatter(data, 4, MPI_INT, local_data, 4, MPI_INT, 0, MPI_COMM_WORLD);"
+  },
+  {
+    "id": "mpi-fb-04",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "find-the-bug",
+    "title": "Mismatched Collective Roots",
+    "prompt": "What happens when this code executes?\n\nif (my_rank % 2 == 0) {\n    MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);\n} else {\n    MPI_Bcast(&val, 1, MPI_INT, 1, MPI_COMM_WORLD);\n}",
+    "code": "if (my_rank % 2 == 0) {\n    MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);\n} else {\n    MPI_Bcast(&val, 1, MPI_INT, 1, MPI_COMM_WORLD);\n}",
+    "bugLine": 1,
+    "solutionSteps": [
+      "Bug: Collective root mismatch and conditional divergence.",
+      "Even ranks execute MPI_Bcast expecting root = 0; odd ranks execute MPI_Bcast expecting root = 1.",
+      "In MPI, all participating processes in the communicator must agree on identical root arguments for collective routines. Mismatched roots violate the specification and cause deadlocks or corrupt transfers.",
+      "Fix: All processes must call MPI_Bcast with the exact same root parameter (e.g. root = 0)."
+    ],
+    "correctCode": "MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);"
+  },
+  {
+    "id": "mpi-fb-05",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "find-the-bug",
+    "title": "Buffer Truncation in MPI_Recv",
+    "prompt": "Identify why this program aborts with MPI_ERR_TRUNCATE:\n\n// Rank 0:\ndouble arr[10] = {1,2,3,4,5,6,7,8,9,10};\nMPI_Send(arr, 10, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);\n\n// Rank 1:\ndouble arr[5];\nMPI_Recv(arr, 5, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);",
+    "code": "// Rank 1:\ndouble arr[5];\nMPI_Recv(arr, 5, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);",
+    "bugLine": 3,
+    "solutionSteps": [
+      "Bug: The receive buffer is smaller than the transmitted message payload (5 doubles vs 10 doubles).",
+      "In MPI, receiving fewer elements than were transmitted is a fatal truncation error (MPI_ERR_TRUNCATE). The MPI standard forbids truncating incoming messages without explicit configuration.",
+      "Fix: The receive buffer count in MPI_Recv must be greater than or equal to the sender's count (at least 10)."
+    ],
+    "correctCode": "double arr[10];\nMPI_Recv(arr, 10, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);"
+  },
+  {
+    "id": "mpi-fb-06",
+    "technology": "mpi",
+    "topicRef": "02-foundations",
+    "category": "find-the-bug",
+    "title": "Missing Address Operator in MPI_Init",
+    "prompt": "Why does the compiler emit a warning and the program crash on startup?\n\nint main(int argc, char** argv) {\n    MPI_Init(argc, argv);\n    // ...\n}",
+    "code": "MPI_Init(argc, argv);",
+    "bugLine": 1,
+    "solutionSteps": [
+      "Bug: MPI_Init requires pointers to argc and argv: int MPI_Init(int *argc, char ***argv).",
+      "Passing 'argc' and 'argv' by value passes an integer and char** instead of int* and char***.",
+      "MPI modifies command-line arguments to strip out MPI-specific launcher flags (such as -np), which requires modifying the variables via pointers.",
+      "Fix: Pass address: MPI_Init(&argc, &argv);"
+    ],
+    "correctCode": "MPI_Init(&argc, &argv);"
+  },
+  {
+    "id": "mpi-fb-07",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "find-the-bug",
+    "title": "Passing Receive Buffer in In-Place MPI_Reduce",
+    "prompt": "Why does this MPI_Reduce produce corrupted answers on Process 0?\n\nint sum = local_val;\nMPI_Reduce(&sum, &sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);",
+    "code": "int sum = local_val;\nMPI_Reduce(&sum, &sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);",
+    "bugLine": 2,
+    "solutionSteps": [
+      "Bug: Passing the identical buffer pointer as both sendbuf and recvbuf without MPI_IN_PLACE.",
+      "Standard C MPI restricts overlapping memory buffers for sendbuf and recvbuf in collective routines (aliasing violation).",
+      "Fix: Use separate variables for local send and global receive, or use the MPI_IN_PLACE special constant on rank 0."
+    ],
+    "correctCode": "int local_val = 5;\nint total = 0;\nMPI_Reduce(&local_val, &total, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);"
+  },
+  {
+    "id": "mpi-fb-08",
+    "technology": "mpi",
+    "topicRef": "07-odd-even-sort",
+    "category": "find-the-bug",
+    "title": "Partner Out-of-Bounds in Parallel Odd-Even Sort",
+    "prompt": "In an odd-even sort with comm_sz = 4, why does this partner calculation crash during odd phases?\n\nint partner = (phase % 2 == 0) ? (rank ^ 1) : ((rank % 2 == 1) ? rank + 1 : rank - 1);\nMPI_Sendrecv(local, n, MPI_INT, partner, 0, temp, n, MPI_INT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);",
+    "code": "int partner = (phase % 2 == 0) ? (rank ^ 1) : ((rank % 2 == 1) ? rank + 1 : rank - 1);\nMPI_Sendrecv(local, n, MPI_INT, partner, 0, temp, n, MPI_INT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);",
+    "bugLine": 1,
+    "solutionSteps": [
+      "Bug: In odd phases, when rank == 3 (an odd rank), rank + 1 evaluates to 4 (which is >= comm_sz). When rank == 0 (an even rank), rank - 1 evaluates to -1.",
+      "Calling MPI_Sendrecv with an invalid rank like 4 crashes MPI with an invalid rank error.",
+      "Fix: Check boundary conditions. When partner < 0 or partner >= comm_sz, assign partner = MPI_PROC_NULL (or skip communication)."
+    ],
+    "correctCode": "int partner;\nif (phase % 2 == 0) {\n    partner = (rank % 2 == 0) ? rank + 1 : rank - 1;\n} else {\n    partner = (rank % 2 == 1) ? rank + 1 : rank - 1;\n}\nif (partner < 0 || partner >= comm_sz) {\n    partner = MPI_PROC_NULL;\n}\nMPI_Sendrecv(local, n, MPI_INT, partner, 0, temp, n, MPI_INT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);"
+  },
+  {
+    "id": "mpi-wp-01",
+    "technology": "mpi",
+    "topicRef": "02-foundations",
+    "category": "write-the-program",
+    "title": "Program: Barrier-Ordered Sequential Output",
+    "prompt": "Write a complete C MPI program where all processes print 'Process <rank> of <size> reporting' in strict ascending numerical order (Rank 0 first, then Rank 1, ..., Rank size-1).",
+    "solutionSteps": [
+      "Use a loop over all possible ranks from 0 to size - 1.",
+      "In each iteration i, only rank i calls printf followed by fflush(stdout).",
+      "Follow each iteration with MPI_Barrier(MPI_COMM_WORLD) so no process advances to iteration i+1 until rank i has completed printing."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    for (int p = 0; p < size; p++) {\n        if (rank == p) {\n            printf(\"Process %d of %d reporting\\n\", rank, size);\n            fflush(stdout);\n        }\n        MPI_Barrier(MPI_COMM_WORLD);\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Process 0 of 4 reporting\nProcess 1 of 4 reporting\nProcess 2 of 4 reporting\nProcess 3 of 4 reporting"
+  },
+  {
+    "id": "mpi-wp-02",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "write-the-program",
+    "title": "Program: Ping-Pong Communication",
+    "prompt": "Write a complete C MPI program implementing a ping-pong exchange between Rank 0 and Rank 1 up to a LIMIT of 10 exchanges. Rank 0 initiates ping; Rank 1 replies with pong. Print the counter at each exchange.",
+    "solutionSteps": [
+      "Ensure program checks that comm_size >= 2.",
+      "Maintain an integer ping_pong_count initialized to 0.",
+      "Loop while ping_pong_count < LIMIT. Rank (ping_pong_count % 2) increments the count and sends to (rank + 1) % 2, while the other rank receives.",
+      "Print the rank and count at each reception."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\n#define PING_PONG_LIMIT 10\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    if (size < 2) {\n        if (rank == 0) printf(\"Requires at least 2 processes\\n\");\n        MPI_Finalize();\n        return 0;\n    }\n\n    int ping_pong_count = 0;\n    int partner = (rank == 0) ? 1 : 0;\n\n    while (ping_pong_count < PING_PONG_LIMIT) {\n        if (rank == ping_pong_count % 2) {\n            ping_pong_count++;\n            MPI_Send(&ping_pong_count, 1, MPI_INT, partner, 0, MPI_COMM_WORLD);\n            printf(\"Rank %d sent ping_pong_count %d to Rank %d\\n\", rank, ping_pong_count, partner);\n        } else {\n            MPI_Recv(&ping_pong_count, 1, MPI_INT, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n            printf(\"Rank %d received ping_pong_count %d from Rank %d\\n\", rank, ping_pong_count, partner);\n        }\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Rank 0 sent ping_pong_count 1 to Rank 1\nRank 1 received ping_pong_count 1 from Rank 0\nRank 1 sent ping_pong_count 2 to Rank 0\nRank 0 received ping_pong_count 2 from Rank 1\n..."
+  },
+  {
+    "id": "mpi-wp-03",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "write-the-program",
+    "title": "Program: Ring Topology Token Passing",
+    "prompt": "Write a complete C MPI program for a ring topology. Rank 0 initializes token = 10. Each process receives from (rank - 1 + size) % size, adds its own rank to the token, and sends to (rank + 1) % size. Rank 0 prints the final value.",
+    "solutionSteps": [
+      "Compute neighbor ranks: next = (rank + 1) % size; prev = (rank - 1 + size) % size.",
+      "To prevent deadlock, Rank 0 sends the initial token first, then waits at the end to receive the completed token from prev.",
+      "All other processes (ranks 1 to size - 1) receive from prev, add rank, and send to next.",
+      "Rank 0 receives from prev, adds 0, and prints the result."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    int token = 0;\n    int next = (rank + 1) % size;\n    int prev = (rank - 1 + size) % size;\n\n    if (rank == 0) {\n        token = 10;\n        printf(\"Rank 0 starting token with value %d\\n\", token);\n        MPI_Send(&token, 1, MPI_INT, next, 0, MPI_COMM_WORLD);\n        MPI_Recv(&token, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n        printf(\"Rank 0 received back completed token = %d\\n\", token);\n    } else {\n        MPI_Recv(&token, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n        token += rank;\n        printf(\"Rank %d received token, added %d -> now %d, forwarding to %d\\n\", rank, rank, token, next);\n        MPI_Send(&token, 1, MPI_INT, next, 0, MPI_COMM_WORLD);\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Rank 0 starting token with value 10\nRank 1 received token, added 1 -> now 11, forwarding to 2\nRank 2 received token, added 2 -> now 13, forwarding to 3\nRank 3 received token, added 3 -> now 16, forwarding to 0\nRank 0 received back completed token = 16"
+  },
+  {
+    "id": "mpi-wp-04",
+    "technology": "mpi",
+    "topicRef": "06-trapezoidal-rule",
+    "category": "write-the-program",
+    "title": "Program: Trapezoidal Rule with MPI_Reduce (Lab 9 Task 1)",
+    "prompt": "Write a complete C MPI program to estimate the integral of f(x) = 2x + 3 from a = 0 to b = 2 using the composite trapezoidal rule with n = 1024 trapezoids. Use MPI_Reduce with root = MAX(rank) = comm_sz - 1.",
+    "solutionSteps": [
+      "Analytical Solution: Integral of (2x + 3) dx from 0 to 2 is [x^2 + 3x]_0^2 = (4 + 6) - 0 = 10.0.",
+      "Local partition: h = (b - a) / n. Each rank gets local_n = n / comm_sz trapezoids. local_a = a + rank * local_n * h; local_b = local_a + local_n * h.",
+      "Compute local trapezoid sum using Trap(local_a, local_b, local_n, h).",
+      "Call MPI_Reduce to sum local integrals into total_integral on root = comm_sz - 1.",
+      "Root process prints the total integral and compares with exact value 10.0."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\ndouble f(double x) {\n    return 2.0 * x + 3.0;\n}\n\ndouble Trap(double left, double right, int count, double base_len) {\n    double estimate = (f(left) + f(right)) / 2.0;\n    for (int i = 1; i < count; i++) {\n        double x = left + i * base_len;\n        estimate += f(x);\n    }\n    return estimate * base_len;\n}\n\nint main(int argc, char** argv) {\n    int rank, size;\n    double a = 0.0, b = 2.0;\n    int n = 1024;\n\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    double h = (b - a) / n;\n    int local_n = n / size;\n    double local_a = a + rank * local_n * h;\n    double local_b = local_a + local_n * h;\n\n    double local_integral = Trap(local_a, local_b, local_n, h);\n    double total_integral = 0.0;\n    int root = size - 1; // MAX(rank) as requested in Lab 9\n\n    MPI_Reduce(&local_integral, &total_integral, 1, MPI_DOUBLE, MPI_SUM, root, MPI_COMM_WORLD);\n\n    if (rank == root) {\n        printf(\"Root Rank %d (MAX rank) Result: Estimated = %f (Exact = 10.000000)\\n\", root, total_integral);\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Root Rank 3 (MAX rank) Result: Estimated = 10.000000 (Exact = 10.000000)"
+  },
+  {
+    "id": "mpi-wp-05",
+    "technology": "mpi",
+    "topicRef": "05-data-distributions",
+    "category": "write-the-program",
+    "title": "Program: Parallel Vector Addition using MPI_Scatter and MPI_Gather",
+    "prompt": "Write a complete C MPI program that adds two vectors X and Y of size N = 8. Process 0 initializes vectors X and Y, scatters them to 4 processes using MPI_Scatter, each process computes Z[i] = X[i] + Y[i], and results are collected back on Process 0 with MPI_Gather.",
+    "solutionSteps": [
+      "Define N = 8, comm_sz = 4, so local_n = 2.",
+      "Allocate local buffers local_X[2], local_Y[2], local_Z[2] on all processes.",
+      "Call MPI_Scatter for X and Y with sendcount = local_n, recvcount = local_n.",
+      "Each process performs local vector sum: local_Z[i] = local_X[i] + local_Y[i].",
+      "Call MPI_Gather to gather local_Z back into global Z on root = 0 and print."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\n#define N 8\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    int local_n = N / size;\n    double X[N], Y[N], Z[N];\n    double local_X[local_n], local_Y[local_n], local_Z[local_n];\n\n    if (rank == 0) {\n        for (int i = 0; i < N; i++) {\n            X[i] = i * 1.0;\n            Y[i] = i * 2.0;\n        }\n    }\n\n    MPI_Scatter(X, local_n, MPI_DOUBLE, local_X, local_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);\n    MPI_Scatter(Y, local_n, MPI_DOUBLE, local_Y, local_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);\n\n    for (int i = 0; i < local_n; i++) {\n        local_Z[i] = local_X[i] + local_Y[i];\n    }\n\n    MPI_Gather(local_Z, local_n, MPI_DOUBLE, Z, local_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);\n\n    if (rank == 0) {\n        printf(\"Result Vector Z = X + Y:\\n\");\n        for (int i = 0; i < N; i++) {\n            printf(\"Z[%d] = %.1f \", i, Z[i]);\n        }\n        printf(\"\\n\");\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Result Vector Z = X + Y:\nZ[0] = 0.0 Z[1] = 3.0 Z[2] = 6.0 Z[3] = 9.0 Z[4] = 12.0 Z[5] = 15.0 Z[6] = 18.0 Z[7] = 21.0 "
+  },
+  {
+    "id": "mpi-wp-06",
+    "technology": "mpi",
+    "topicRef": "07-odd-even-sort",
+    "category": "write-the-program",
+    "title": "Program: Parallel Odd-Even Transposition Sort (Lab 9 Task 2)",
+    "prompt": "Write a complete C MPI program implementing Parallel Odd-Even Transposition sort for N = 16 elements on 4 processes using MPI_Sendrecv. Test with array A = [15, 29, 100, 23, -14, 45, 178, 192, 246, -118, 0, 7, 1, 10, 25, 34].",
+    "solutionSteps": [
+      "Local count is N / 4 = 4 integers per process.",
+      "Scatter the 16 numbers from Rank 0 to all 4 processes.",
+      "Sort local array of 4 integers using qsort.",
+      "Execute a loop of comm_sz = 4 phases (even phase: pair with rank^1; odd phase: if (rank%2==1) partner=rank+1 else partner=rank-1). Check partner bounds against MPI_PROC_NULL.",
+      "Participating pairs use MPI_Sendrecv to exchange blocks. Rank with smaller rank executes Merge-Low; rank with larger rank executes Merge-High.",
+      "Gather sorted arrays back to Rank 0 and display."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <stdlib.h>\n#include <mpi.h>\n\nint cmp(const void* a, const void* b) {\n    return (*(int*)a - *(int*)b);\n}\n\nvoid merge_low(int* my_keys, int* recv_keys, int n) {\n    int* temp = (int*)malloc(n * sizeof(int));\n    int i = 0, j = 0, k = 0;\n    while (k < n) {\n        if (my_keys[i] <= recv_keys[j]) {\n            temp[k++] = my_keys[i++];\n        } else {\n            temp[k++] = recv_keys[j++];\n        }\n    }\n    for (i = 0; i < n; i++) my_keys[i] = temp[i];\n    free(temp);\n}\n\nvoid merge_high(int* my_keys, int* recv_keys, int n) {\n    int* temp = (int*)malloc(n * sizeof(int));\n    int i = n - 1, j = n - 1, k = n - 1;\n    while (k >= 0) {\n        if (my_keys[i] >= recv_keys[j]) {\n            temp[k--] = my_keys[i--];\n        } else {\n            temp[k--] = recv_keys[j--];\n        }\n    }\n    for (i = 0; i < n; i++) my_keys[i] = temp[i];\n    free(temp);\n}\n\nint main(int argc, char** argv) {\n    int rank, size;\n    int N = 16;\n    int A[16] = {15, 29, 100, 23, -14, 45, 178, 192, 246, -118, 0, 7, 1, 10, 25, 34};\n\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    int n_local = N / size;\n    int* local = (int*)malloc(n_local * sizeof(int));\n    int* temp = (int*)malloc(n_local * sizeof(int));\n\n    MPI_Scatter(A, n_local, MPI_INT, local, n_local, MPI_INT, 0, MPI_COMM_WORLD);\n    qsort(local, n_local, sizeof(int), cmp);\n\n    for (int phase = 0; phase < size; phase++) {\n        int partner;\n        if (phase % 2 == 0) {\n            partner = (rank % 2 == 0) ? rank + 1 : rank - 1;\n        } else {\n            partner = (rank % 2 == 1) ? rank + 1 : rank - 1;\n        }\n\n        if (partner >= 0 && partner < size) {\n            MPI_Sendrecv(local, n_local, MPI_INT, partner, 0,\n                         temp, n_local, MPI_INT, partner, 0,\n                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n            if (rank < partner) {\n                merge_low(local, temp, n_local);\n            } else {\n                merge_high(local, temp, n_local);\n            }\n        }\n    }\n\n    MPI_Gather(local, n_local, MPI_INT, A, n_local, MPI_INT, 0, MPI_COMM_WORLD);\n\n    if (rank == 0) {\n        printf(\"Sorted Array: \");\n        for (int i = 0; i < N; i++) printf(\"%d \", A[i]);\n        printf(\"\\n\");\n    }\n\n    free(local);\n    free(temp);\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Sorted Array: -118 -14 0 1 7 10 15 23 25 29 34 45 100 178 192 246"
+  },
+  {
+    "id": "mpi-wp-07",
+    "technology": "mpi",
+    "topicRef": "08-matrix-multiplication",
+    "category": "write-the-program",
+    "title": "Program: Row-Striped Matrix-Vector Multiplication",
+    "prompt": "Write a complete C MPI program to compute y = A * x where A is an N x N matrix (N = 4) and x is an N-element vector. Matrix A is distributed by rows (one row per process) and vector x is broadcast to all processes with MPI_Bcast.",
+    "solutionSteps": [
+      "Root process initializes matrix A[4][4] and vector x[4].",
+      "Broadcast vector x to all 4 processes with MPI_Bcast.",
+      "Scatter rows of A: Rank i receives row A[i] (4 elements) via MPI_Scatter.",
+      "Each rank computes dot product: local_y = sum(A[i][j] * x[j]).",
+      "Gather local_y results back to root with MPI_Gather and print vector y."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\n#define N 4\n\nint main(int argc, char** argv) {\n    int rank, size;\n    double A[N][N], x[N], y[N];\n    double local_row[N], local_y = 0.0;\n\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    if (rank == 0) {\n        // Initialize matrix and vector\n        for (int i = 0; i < N; i++) {\n            x[i] = 1.0;\n            for (int j = 0; j < N; j++) {\n                A[i][j] = (i + 1) * 10 + (j + 1);\n            }\n        }\n    }\n\n    MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);\n    MPI_Scatter(A, N, MPI_DOUBLE, local_row, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);\n\n    for (int j = 0; j < N; j++) {\n        local_y += local_row[j] * x[j];\n    }\n\n    MPI_Gather(&local_y, 1, MPI_DOUBLE, y, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);\n\n    if (rank == 0) {\n        printf(\"Result vector y = A * x:\\n\");\n        for (int i = 0; i < N; i++) {\n            printf(\"y[%d] = %.1f\\n\", i, y[i]);\n        }\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Result vector y = A * x:\ny[0] = 50.0\ny[1] = 90.0\ny[2] = 130.0\ny[3] = 170.0"
+  },
+  {
+    "id": "mpi-wp-08",
+    "technology": "mpi",
+    "topicRef": "09-graph-search",
+    "category": "write-the-program",
+    "title": "Program: Parallel Level-Synchronous BFS Traversal (Lab 10)",
+    "prompt": "Write a C MPI program implementing level-synchronous Parallel BFS on a 4-node cycle graph (0-1-2-3-0). Root node is 0. Traversal frontier is shared across iterations using MPI_Allreduce.",
+    "solutionSteps": [
+      "Maintain an array visited[4] and frontier[4] initialized to 0. On rank 0, visited[0]=1, frontier[0]=1.",
+      "Broadcast initial visited state to all processes.",
+      "Each process is assigned a subset of vertices (e.g. vertex = rank). In each BFS step, if process's vertex was in frontier, it finds all unvisited neighbors and marks them in local_next_frontier.",
+      "Call MPI_Allreduce with MPI_LOR to merge local frontiers into global next_frontier across all ranks.",
+      "Update visited array. Loop terminates when frontier is empty."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <string.h>\n#include <mpi.h>\n\n#define V 4\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    int adj[V][V] = {\n        {0, 1, 0, 1},\n        {1, 0, 1, 0},\n        {0, 1, 0, 1},\n        {1, 0, 1, 0}\n    };\n\n    int visited[V] = {0};\n    int frontier[V] = {0};\n    int local_next[V] = {0};\n    int global_next[V] = {0};\n\n    if (rank == 0) {\n        visited[0] = 1;\n        frontier[0] = 1;\n    }\n    MPI_Bcast(visited, V, MPI_INT, 0, MPI_COMM_WORLD);\n    MPI_Bcast(frontier, V, MPI_INT, 0, MPI_COMM_WORLD);\n\n    int level = 0;\n    while (1) {\n        memset(local_next, 0, sizeof(local_next));\n        // Process handles vertex matching its rank\n        if (frontier[rank]) {\n            for (int u = 0; u < V; u++) {\n                if (adj[rank][u] && !visited[u]) {\n                    local_next[u] = 1;\n                }\n            }\n        }\n\n        MPI_Allreduce(local_next, global_next, V, MPI_INT, MPI_LOR, MPI_COMM_WORLD);\n\n        int active = 0;\n        for (int i = 0; i < V; i++) {\n            if (global_next[i]) {\n                visited[i] = 1;\n                active = 1;\n            }\n            frontier[i] = global_next[i];\n        }\n\n        if (!active) break;\n        level++;\n        if (rank == 0) printf(\"BFS Level %d discovered vertices: \", level);\n        for (int i = 0; i < V; i++) {\n            if (frontier[i] && rank == 0) printf(\"%d \", i);\n        }\n        if (rank == 0) printf(\"\\n\");\n    }\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "BFS Level 1 discovered vertices: 1 3 \nBFS Level 2 discovered vertices: 2 "
+  },
+  {
+    "id": "mpi-wp-09",
+    "technology": "mpi",
+    "topicRef": "02-foundations",
+    "category": "write-the-program",
+    "title": "Program: Text Print with Rank ID (Lab 8 Task 1)",
+    "prompt": "Write an MPI program in C to print the text 'IIIT-Kottayam' alongside each process's ID (rank) and the total number of processes.",
+    "solutionSteps": [
+      "Call MPI_Init(&argc, &argv).",
+      "Call MPI_Comm_rank and MPI_Comm_size.",
+      "Print string 'IIIT-Kottayam Process Rank: %d of %d\\n'.",
+      "Call MPI_Finalize()."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    printf(\"IIIT-Kottayam Process Rank: %d of %d\\n\", rank, size);\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "IIIT-Kottayam Process Rank: 0 of 4\nIIIT-Kottayam Process Rank: 1 of 4\nIIIT-Kottayam Process Rank: 2 of 4\nIIIT-Kottayam Process Rank: 3 of 4"
+  },
+  {
+    "id": "mpi-wp-10",
+    "technology": "mpi",
+    "topicRef": "03-point-to-point",
+    "category": "write-the-program",
+    "title": "Program: Non-Blocking Isend/Irecv with Waitall",
+    "prompt": "Write a snippet using non-blocking MPI_Isend and MPI_Irecv to perform a safe two-way exchange of integer arrays between Rank 0 and Rank 1 without any chance of deadlock.",
+    "solutionSteps": [
+      "Declare MPI_Request reqs[2].",
+      "Call MPI_Irecv into recv_buf with reqs[0].",
+      "Call MPI_Isend from send_buf with reqs[1].",
+      "Call MPI_Waitall(2, reqs, MPI_STATUSES_IGNORE) to guarantee both operations have safely finished before reading recv_buf."
+    ],
+    "correctCode": "#include <stdio.h>\n#include <mpi.h>\n\nint main(int argc, char** argv) {\n    int rank, size;\n    MPI_Init(&argc, &argv);\n    MPI_Comm_rank(MPI_COMM_WORLD, &rank);\n    MPI_Comm_size(MPI_COMM_WORLD, &size);\n\n    if (rank >= 2) {\n        MPI_Finalize();\n        return 0;\n    }\n\n    int send_val = rank * 100;\n    int recv_val = -1;\n    int partner = (rank == 0) ? 1 : 0;\n    MPI_Request reqs[2];\n\n    MPI_Irecv(&recv_val, 1, MPI_INT, partner, 0, MPI_COMM_WORLD, &reqs[0]);\n    MPI_Isend(&send_val, 1, MPI_INT, partner, 0, MPI_COMM_WORLD, &reqs[1]);\n\n    MPI_Waitall(2, reqs, MPI_STATUSES_IGNORE);\n    printf(\"Rank %d received %d from partner %d\\n\", rank, recv_val, partner);\n\n    MPI_Finalize();\n    return 0;\n}",
+    "expectedOutput": "Rank 0 received 100 from partner 1\nRank 1 received 0 from partner 0"
+  },
+  {
+    "id": "mpi-ca-01",
+    "technology": "mpi",
+    "topicRef": "01-basics",
+    "category": "complexity-analysis",
+    "title": "Amdahl's Law Speedup Calculation",
+    "prompt": "A sequential seismic analysis program spends 85% of its execution time in parallelizable matrix operations and 15% in strictly sequential file I/O. Calculate the theoretical speedup achievable on 8 processors and the theoretical maximum speedup as N -> infinity.",
+    "solutionSteps": [
+      "Formula: S = 1 / ((1 - P) + P / N). Here P = 0.85, so (1 - P) = 0.15.",
+      "For N = 8: S(8) = 1 / (0.15 + 0.85 / 8) = 1 / (0.15 + 0.10625) = 1 / 0.25625 \u2248 3.902x.",
+      "For N -> infinity: S_max = 1 / (1 - P) = 1 / 0.15 \u2248 6.67x.",
+      "Conclusion: Even with an infinite cluster, this program can never achieve greater than 6.67x speedup due to the 15% serial bottleneck."
+    ],
+    "expectedOutput": "Speedup on 8 cores = 3.90x\nMaximum theoretical limit = 6.67x"
+  },
+  {
+    "id": "mpi-ca-02",
+    "technology": "mpi",
+    "topicRef": "08-matrix-multiplication",
+    "category": "complexity-analysis",
+    "title": "Cannon's Algorithm Communication Cost Model",
+    "prompt": "Derive the communication latency equation for Cannon's 2D Matrix Multiplication on a sqrt(p) x sqrt(p) mesh with communication startup time t_s and word transmission time t_w.",
+    "solutionSteps": [
+      "Problem setup: Multiplying two n x n matrices on p processes. Each process holds sub-blocks of size (n / sqrt(p)) x (n / sqrt(p)), meaning each block contains n^2 / p elements.",
+      "Phase 1 (Initial Alignment): Maximum shift distance is sqrt(p) - 1 for both A (row shift) and B (column shift). This requires 2 * (sqrt(p) - 1) message exchanges.",
+      "Phase 2 (Multiply-Shift Loop): Exactly sqrt(p) iterations. Each iteration performs 1 shift left for A and 1 shift up for B (total sqrt(p) - 1 shifts during loop).",
+      "Total communication time formula: T_comm = 2 * (sqrt(p) - 1) * (t_s + t_w * (n^2 / p)).",
+      "Computation time: sqrt(p) * (2 * (n / sqrt(p))^3) = 2 * n^3 / p flops * t_comp."
+    ]
+  },
+  {
+    "id": "mpi-ca-03",
+    "technology": "mpi",
+    "topicRef": "07-odd-even-sort",
+    "category": "complexity-analysis",
+    "title": "Parallel Odd-Even Transposition Sort Time Complexity",
+    "prompt": "Analyze the time complexity of parallel odd-even transposition sort for N keys across P processes.",
+    "solutionSteps": [
+      "Initial Local Sort: Each process sorts N/P keys sequentially. Using qsort, cost is O((N/P) * log(N/P)).",
+      "Communication in Phase: Exactly P phases. In each phase, participating processes send and receive N/P keys: T_comm_phase = t_s + t_w * (N/P). Total comm across P phases = P * t_s + t_w * N.",
+      "Local Merge-Low / High in Phase: Merging two sorted lists of size N/P takes O(N/P) operations. Over P phases, total merge computation is P * O(N/P) = O(N).",
+      "Overall Time Complexity: T(N, P) = O((N/P) * log(N/P)) + O(N) + O(P * t_s + t_w * N)."
+    ]
+  },
+  {
+    "id": "mpi-ca-04",
+    "technology": "mpi",
+    "topicRef": "04-collectives",
+    "category": "complexity-analysis",
+    "title": "Binary Tree Broadcast vs Linear Broadcast Complexity",
+    "prompt": "Compare the theoretical communication time of a naive linear broadcast (Rank 0 sends to all ranks one by one) versus a binomial tree broadcast implemented in MPI_Bcast for message size m bytes across P processes.",
+    "solutionSteps": [
+      "Naive Linear Broadcast: Root performs P - 1 point-to-point sends. Time T = (P - 1) * (t_s + t_w * m) = O(P * m).",
+      "Binomial Tree Broadcast: At step 1, Rank 0 sends to P/2. At step 2, both ranks send to their sub-trees. Tree depth is ceil(log2(P)).",
+      "Binomial Tree Time: T = ceil(log2(P)) * (t_s + t_w * m) = O(log(P) * m).",
+      "Comparison: For P = 1024, linear broadcast takes 1023 steps, whereas binomial tree broadcast completes in only 10 steps!"
+    ]
+  },
+  {
+    "id": "mpi-ca-05",
+    "technology": "mpi",
+    "topicRef": "06-trapezoidal-rule",
+    "category": "complexity-analysis",
+    "title": "Isoefficiency and Scalability of Parallel Trapezoidal Rule",
+    "prompt": "Calculate the speedup and parallel efficiency of the parallel trapezoidal rule assuming computation time per trapezoid is t_calc and MPI_Reduce takes O(log P * t_comm) for N trapezoids on P processes.",
+    "solutionSteps": [
+      "Sequential Time: T_seq = N * t_calc.",
+      "Parallel Time: T_par = (N / P) * t_calc + c * log2(P) * t_comm.",
+      "Speedup: S = T_seq / T_par = (N * t_calc) / ((N / P) * t_calc + c * log2(P) * t_comm) = P / (1 + (c * P * log2(P) * t_comm) / (N * t_calc)).",
+      "Efficiency: E = S / P = 1 / (1 + (c * P * log2(P) * t_comm) / (N * t_calc)).",
+      "Scalability: To maintain constant efficiency as P increases, problem size N must grow in proportion to P * log(P)."
+    ]
+  },
+  {
+    "id": "mpi-ca-06",
+    "technology": "mpi",
+    "topicRef": "08-matrix-multiplication",
+    "category": "complexity-analysis",
+    "title": "1D Column-wise Decomposition Cost Model (Part 5 Slide 8)",
+    "prompt": "According to the course slides, what is the communication cost model for 1D column-wise decomposition of matrix multiplication C = A x B of size n x n across p processes?",
+    "solutionSteps": [
+      "Setup: Matrix A and B partitioned such that each process owns a column strip of width n / p.",
+      "Data Dependency: To compute its local columns of C, each process needs access to the entire matrix A (or all rows).",
+      "All-to-All / Allgather: Processes must execute an Allgather to exchange column strips. Each process broadcasts its strip of size n^2 / p to all other (p - 1) processes.",
+      "Communication formula: T_comm = (p - 1) * t_s + t_w * (p - 1) * (n^2 / p) = (p - 1) * (t_s + t_w * n^2 / p).",
+      "Comparison with Cannon: 1D decomposition scales as O(p), whereas Cannon's 2D decomposition scales as O(sqrt(p)), making 2D vastly superior for large clusters."
+    ]
+  },
+  {
+    "id": "mpi-ca-07",
+    "technology": "mpi",
+    "topicRef": "01-basics",
+    "category": "complexity-analysis",
+    "title": "Foster's PCAM Methodology Analysis for Odd-Even Sort",
+    "prompt": "Walk through the four phases of Foster's Design Methodology (Partitioning, Communication, Agglomeration, Mapping) for parallel odd-even transposition sort.",
+    "solutionSteps": [
+      "1. Partitioning: Decompose list of N numbers into fine-grained tasks where each task is a single number and its adjacent comparisons.",
+      "2. Communication: Determine data flow: tasks need adjacent keys to perform compare-exchange.",
+      "3. Agglomeration: Group N fine-grained tasks into P large contiguous blocks of size N/P to minimize network message startups and leverage local cache sorting (qsort).",
+      "4. Mapping: Assign the P agglomerated blocks to P physical cluster nodes arranged in a linear array, matching communication partners (p-1 and p+1)."
+    ]
+  },
+  {
+    "id": "mpi-ca-08",
+    "technology": "mpi",
+    "topicRef": "09-graph-search",
+    "category": "complexity-analysis",
+    "title": "Parallel BFS Scalability Bottleneck in Scale-Free Graphs",
+    "prompt": "Why does level-synchronous parallel BFS perform poorly on scale-free graphs (e.g. social networks with power-law degree distributions) compared to regular mesh graphs?",
+    "solutionSteps": [
+      "Mesh Graphs: Have large graph diameter (many levels) and bounded vertex degrees. Frontier sizes remain moderate and load is evenly distributed.",
+      "Scale-Free Graphs: Have the 'small-world' property (tiny diameter, e.g. 4-6 levels) and high-degree hub vertices.",
+      "Bottleneck 1: Hub vertices cause massive communication hotspots and catastrophic load imbalance when expanded.",
+      "Bottleneck 2: Global synchronization barrier (MPI_Allreduce) is required at every level, creating high synchronization latency that dominates the few total levels."
+    ]
+  }
+]

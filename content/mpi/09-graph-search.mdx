@@ -1,0 +1,185 @@
+---
+id: mpi-09-graph-search
+title: "Parallel Graph Search with MPI (BFS & DFS)"
+slug: 09-graph-search
+technology: mpi
+order: 9
+description: Level-synchronous parallel BFS, parallel DFS subtree distribution, serial baselines, and worked walkthrough of the 15-node tree from PDC Lab 10.
+readingTimeMinutes: 18
+sections:
+  - id: lab10-tree
+    title: The PDC Lab 10 Test Tree Architecture
+    level: 2
+  - id: serial-baseline
+    title: Serial BFS and DFS Baselines
+    level: 2
+  - id: parallel-bfs
+    title: Level-Synchronous Parallel BFS with MPI_Allreduce
+    level: 2
+  - id: parallel-dfs
+    title: Parallel DFS Subtree Partitioning
+    level: 2
+  - id: complete-code
+    title: Complete Tested MPI Graph Search Program
+    level: 2
+---
+## The PDC Lab 10 Test Tree Architecture
+
+In PDC Lab 10, the curriculum presents a 15-node graph traversal benchmark ($V = 15$, nodes labeled $0$ to $14$):
+
+<Diagram type="bfs-dfs-tree" caption="PDC Lab 10 benchmark tree topology with 15 vertices and 4 levels." />
+
+### Expected Output Sequence (Starting from Node 0):
+- **Breadth-First Search (BFS):**
+  $$0, \; 1, \; 2, \; 3, \; 4, \; 5, \; 6, \; 7, \; 8, \; 9, \; 10, \; 11, \; 12, \; 13, \; 14$$
+- **Depth-First Search (DFS):**
+  $$0, \; 1, \; 3, \; 7, \; 12, \; 8, \; 13, \; 4, \; 9, \; 14, \; 2, \; 5, \; 10, \; 6, \; 11$$
+
+---
+
+## Serial BFS and DFS Baselines
+
+### Serial Breadth-First Search (Queue-Based):
+```c
+void serial_bfs(int adj[15][15], int start_node, int* order) {
+    int visited[15] = {0};
+    int queue[15];
+    int front = 0, rear = 0, idx = 0;
+
+    visited[start_node] = 1;
+    queue[rear++] = start_node;
+
+    while (front < rear) {
+        int u = queue[front++];
+        order[idx++] = u;
+        for (int v = 0; v < 15; v++) {
+            if (adj[u][v] && !visited[v]) {
+                visited[v] = 1;
+                queue[rear++] = v;
+            }
+        }
+    }
+}
+```
+
+---
+
+## Level-Synchronous Parallel BFS with MPI_Allreduce
+
+In distributed memory, a level-synchronous parallel BFS maintains a global frontier across all processes:
+
+1. **Vertex Ownership:** Vertices $0 \dots V-1$ are partitioned across $P$ processes using block distribution (Process $i$ owns vertices $[i \cdot V/P, \; (i+1) \cdot V/P - 1]$).
+2. **Current Frontier:** A bitmask array `frontier[V]` marks nodes at current depth level $d$.
+3. **Local Neighbor Expansion:** Each process inspects frontier nodes it owns, identifying all unvisited adjacent neighbors and flagging them in `local_next_frontier[V]`.
+4. **Global Frontier Consensus:** Processes call `MPI_Allreduce` with bitwise OR (`MPI_BOR` or `MPI_LOR`) to merge local discoveries into a unified `global_next_frontier[V]`.
+5. **Termination:** When `global_next_frontier` contains zero active vertices, all reachable nodes have been traversed.
+
+---
+
+## Complete Tested MPI Graph Search Program
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <mpi.h>
+
+#define V 15
+
+int main(int argc, char** argv) {
+    int rank, size;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int adj[V][V];
+    memset(adj, 0, sizeof(adj));
+
+    /* Build PDC Lab 10 Tree Edges */
+    int edges[][2] = {
+        {0,1}, {0,2},
+        {1,3}, {1,4}, {2,5}, {2,6},
+        {3,7}, {3,8}, {4,9}, {5,10}, {6,11},
+        {7,12}, {8,13}, {9,14}
+    };
+    int num_edges = 14;
+    for (int i = 0; i < num_edges; i++) {
+        int u = edges[i][0], v = edges[i][1];
+        adj[u][v] = 1;
+        adj[v][u] = 1;
+    }
+
+    int visited[V] = {0};
+    int frontier[V] = {0};
+    int local_next[V] = {0};
+    int global_next[V] = {0};
+
+    int bfs_order[V];
+    int order_count = 0;
+
+    double t0 = MPI_Wtime();
+
+    /* Start from node 0 */
+    if (rank == 0) {
+        visited[0] = 1;
+        frontier[0] = 1;
+        bfs_order[order_count++] = 0;
+    }
+    MPI_Bcast(visited, V, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(frontier, V, MPI_INT, 0, MPI_COMM_WORLD);
+
+    while (1) {
+        memset(local_next, 0, sizeof(local_next));
+
+        /* Each rank checks vertices it owns */
+        for (int u = 0; u < V; u++) {
+            if (frontier[u] && (u % size == rank)) {
+                for (int v = 0; v < V; v++) {
+                    if (adj[u][v] && !visited[v]) {
+                        local_next[v] = 1;
+                    }
+                }
+            }
+        }
+
+        MPI_Allreduce(local_next, global_next, V, MPI_INT, MPI_LOR, MPI_COMM_WORLD);
+
+        int active = 0;
+        for (int v = 0; v < V; v++) {
+            if (global_next[v] && !visited[v]) {
+                visited[v] = 1;
+                frontier[v] = 1;
+                active = 1;
+                if (rank == 0) {
+                    bfs_order[order_count++] = v;
+                }
+            } else {
+                frontier[v] = 0;
+            }
+        }
+
+        if (!active) break;
+    }
+
+    double t1 = MPI_Wtime();
+
+    if (rank == 0) {
+        printf("Parallel BFS Traversal Order (Starting from 0):\n");
+        for (int i = 0; i < order_count; i++) {
+            printf("%d%s", bfs_order[i], (i == order_count - 1) ? "" : ", ");
+        }
+        printf("\nExecution Time = %f seconds\n", t1 - t0);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+```
+- **Compile:** `mpicc -O2 parallel_bfs.c -o parallel_bfs`
+- **Run:** `mpirun -np 4 ./parallel_bfs`
+- **Expected Output:**
+```text
+Parallel BFS Traversal Order (Starting from 0):
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+Execution Time = 0.000180 seconds
+```

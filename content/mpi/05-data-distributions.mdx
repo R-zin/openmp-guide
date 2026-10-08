@@ -1,0 +1,150 @@
+---
+id: mpi-05-data-distributions
+title: "Data Distributions & Parallel Vector Addition"
+slug: 05-data-distributions
+technology: mpi
+order: 5
+description: Mathematical partitioning schemes (Block, Cyclic, Block-Cyclic), parallel vector addition implementation, and I/O distribution with Read_vector.
+readingTimeMinutes: 14
+sections:
+  - id: partition-types
+    title: Block, Cyclic, and Block-Cyclic Distributions
+    level: 2
+  - id: vector-add-math
+    title: Mathematics of Parallel Vector Addition
+    level: 2
+  - id: read-vector
+    title: "Centralized I/O & Read_vector Pattern"
+    level: 2
+  - id: complete-vector-add
+    title: Complete Parallel Vector Addition Code
+    level: 2
+---
+## Block, Cyclic, and Block-Cyclic Distributions
+
+When mapping arrays of size $N$ across $P$ distributed processes, three primary partitioning schemes exist:
+
+### 1. Block Partition
+Assigns continuous blocks of size $n = \lceil N / P \rceil$ to each process:
+$$\text{Process } i \text{ holds indices: } [i \times n, \; (i + 1) \times n - 1]$$
+- **Advantages:** Excellent cache locality (unit stride), minimizes communication boundaries.
+- **Disadvantages:** Severe load imbalance for triangular matrices where row size decreases monotonically.
+
+### 2. Cyclic Partition (Round-Robin)
+Distributes elements cyclically one by one across processes:
+$$\text{Element } k \text{ is assigned to Process } (k \pmod P)$$
+- **Advantages:** Balances work evenly across processes for non-uniform or triangular data.
+- **Disadvantages:** Poor cache locality (stride $P$), high communication message counts.
+
+### 3. Block-Cyclic Partition
+Partitions the array into fixed-sized blocks of size $b$, and assigns blocks in a round-robin cyclic order:
+$$\text{Element } k \text{ is assigned to Process } \left(\lfloor k / b \rfloor \pmod P\right)$$
+- The foundation of high-performance distributed linear algebra libraries (ScaLAPACK).
+- Strikes an optimal balance between cache spatial locality and load balance.
+
+<Diagram type="data-distribution" caption="Visual comparison of Block, Cyclic, and Block-Cyclic partitioning of a 1D array." />
+
+---
+
+## Mathematics of Parallel Vector Addition
+
+Given two vectors $\mathbf{x} = (x_0, x_1, \dots, x_{N-1})$ and $\mathbf{y} = (y_0, y_1, \dots, y_{N-1})$, the vector sum $\mathbf{z} = \mathbf{x} + \mathbf{y}$ is:
+$$z_i = x_i + y_i, \quad 0 \le i < N$$
+
+Because each element $z_i$ depends strictly on $x_i$ and $y_i$, vector addition is **embarrassingly parallel**:
+- Under block distribution with $N$ divisible by $P$, each process computes $n_{\text{local}} = N / P$ elements independently without any inter-process communication during the computation loop!
+
+---
+
+## Centralized I/O & Read_vector Pattern
+
+In standard cluster environments, worker nodes cannot safely prompt for input from `stdin`. The standard pattern is **Centralized I/O**:
+1. Process 0 prompts the user or reads data files from disk.
+2. Process 0 scatters local blocks to workers using `MPI_Scatter`.
+3. Workers compute local operations.
+4. Process 0 gathers final results using `MPI_Gather` and prints to `stdout`.
+
+---
+
+## Complete Parallel Vector Addition Code
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
+
+void Read_vector(double local_a[], int local_n, int n, char* vec_name, int my_rank, MPI_Comm comm) {
+    double* a = NULL;
+    if (my_rank == 0) {
+        a = (double*)malloc(n * sizeof(double));
+        printf("Process 0 initializing vector %s (N = %d)...\n", vec_name, n);
+        for (int i = 0; i < n; i++) {
+            a[i] = (double)(i + 1); /* Deterministic test data */
+        }
+    }
+
+    MPI_Scatter(a, local_n, MPI_DOUBLE, local_a, local_n, MPI_DOUBLE, 0, comm);
+
+    if (my_rank == 0) {
+        free(a);
+    }
+}
+
+void Print_vector(double local_b[], int local_n, int n, char* title, int my_rank, MPI_Comm comm) {
+    double* b = NULL;
+    if (my_rank == 0) {
+        b = (double*)malloc(n * sizeof(double));
+    }
+
+    MPI_Gather(local_b, local_n, MPI_DOUBLE, b, local_n, MPI_DOUBLE, 0, comm);
+
+    if (my_rank == 0) {
+        printf("%s: ", title);
+        for (int i = 0; i < n; i++) {
+            printf("%.1f ", b[i]);
+        }
+        printf("\n");
+        free(b);
+    }
+}
+
+int main(int argc, char** argv) {
+    int my_rank, comm_sz;
+    int n = 8; /* Total vector length */
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+    int local_n = n / comm_sz;
+    double* local_x = (double*)malloc(local_n * sizeof(double));
+    double* local_y = (double*)malloc(local_n * sizeof(double));
+    double* local_z = (double*)malloc(local_n * sizeof(double));
+
+    /* Centralized initialization and scattering */
+    Read_vector(local_x, local_n, n, "x", my_rank, MPI_COMM_WORLD);
+    Read_vector(local_y, local_n, n, "y", my_rank, MPI_COMM_WORLD);
+
+    /* Local Vector Addition: O(local_n) with zero communication */
+    for (int i = 0; i < local_n; i++) {
+        local_z[i] = local_x[i] + local_y[i];
+    }
+
+    /* Gather and display result */
+    Print_vector(local_z, local_n, n, "Vector Sum z = x + y", my_rank, MPI_COMM_WORLD);
+
+    free(local_x);
+    free(local_y);
+    free(local_z);
+    MPI_Finalize();
+    return 0;
+}
+```
+- **Compile:** `mpicc -O2 vec_add.c -o vec_add`
+- **Run:** `mpirun -np 4 ./vec_add`
+- **Expected Output:**
+```text
+Process 0 initializing vector x (N = 8)...
+Process 0 initializing vector y (N = 8)...
+Vector Sum z = x + y: 2.0 4.0 6.0 8.0 10.0 12.0 14.0 16.0 
+```

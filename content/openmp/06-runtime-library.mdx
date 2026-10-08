@@ -1,0 +1,111 @@
+---
+id: omp-06-runtime-library
+title: OpenMP Runtime Library Functions
+slug: 06-runtime-library
+technology: openmp
+order: 6
+description: Complete reference to OpenMP runtime library functions (<omp.h>), querying threads, setting concurrency, timing benchmarks, dynamic thread adjustment, and nested execution.
+readingTimeMinutes: 14
+sections:
+  - id: core-queries
+    title: Core Query and Mutator Functions
+    level: 2
+  - id: timing-functions
+    title: High-Precision Wall Clock Benchmarking
+    level: 2
+  - id: dynamic-nested
+    title: Dynamic Threads and Nested Parallelism
+    level: 2
+  - id: complete-code
+    title: "Runtime Diagnostics & Verification Program"
+    level: 2
+---
+## Core Query and Mutator Functions
+
+The OpenMP runtime library is accessed by including `<omp.h>`.
+
+### 1. `omp_get_thread_num`
+Returns the unique ID of the calling thread within the current team:
+```c
+int omp_get_thread_num(void);
+```
+- Thread IDs range from $0$ to $\text{num\_threads} - 1$.
+- Thread $0$ is the master thread. Outside a parallel region, returns $0$.
+
+### 2. `omp_get_num_threads`
+Returns the total number of threads in the current executing team:
+```c
+int omp_get_num_threads(void);
+```
+- Outside a parallel construct, returns $1$.
+
+### 3. `omp_set_num_threads`
+Dynamically sets the number of threads to be used for subsequent parallel regions:
+```c
+void omp_set_num_threads(int num_threads);
+```
+- Must be called from a sequential context outside an active parallel region.
+
+### 4. `omp_get_max_threads`
+Returns the maximum number of threads that would be allocated for a parallel region without an explicit `num_threads` clause:
+```c
+int omp_get_max_threads(void);
+```
+
+### 5. `omp_get_num_procs`
+Returns the total number of physical hardware processor cores available on the system:
+```c
+int omp_get_num_procs(void);
+```
+
+---
+
+## High-Precision Wall Clock Benchmarking
+
+### 1. `omp_get_wtime`
+Returns a double-precision floating-point value representing elapsed wall-clock time in seconds from an arbitrary epoch:
+```c
+double omp_get_wtime(void);
+```
+```c
+double start = omp_get_wtime();
+/* Computation */
+double elapsed = omp_get_wtime() - start;
+```
+
+### 2. `omp_get_wtick`
+Returns the resolution (clock tick interval) of `omp_get_wtime` in seconds:
+```c
+double resolution = omp_get_wtick();
+```
+
+---
+
+## Complete Runtime Diagnostics Program
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+int main() {
+    printf("--- OpenMP Environment Diagnostics ---\n");
+    printf("Physical CPU Cores Detected: %d\n", omp_get_num_procs());
+    printf("Default Max Threads: %d\n", omp_get_max_threads());
+    printf("Timer Tick Resolution: %.9f seconds\n", omp_get_wtick());
+
+    /* Dynamically configure thread team size */
+    omp_set_num_threads(4);
+
+    #pragma omp parallel
+    {
+        #pragma omp single
+        printf("Parallel Region Active! Team Size: %d\n", omp_get_num_threads());
+
+        printf("Thread %d executing on core\n", omp_get_thread_num());
+    }
+
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 runtime_demo.c -o runtime_demo`
+- **Run:** `./runtime_demo`

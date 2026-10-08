@@ -1,0 +1,216 @@
+---
+id: mpi-06-trapezoidal-rule
+title: Parallelizing the Trapezoidal Rule
+slug: 06-trapezoidal-rule
+technology: mpi
+order: 6
+description: Complete derivation of the composite trapezoidal rule, Point-to-Point Send/Recv implementation, Collective MPI_Reduce implementation, handling non-divisible intervals, and lecture-slide pitfalls.
+readingTimeMinutes: 18
+sections:
+  - id: mathematical-derivation
+    title: Mathematical Derivation of the Composite Trapezoidal Rule
+    level: 2
+  - id: worked-example
+    title: Analytical Worked Example
+    level: 2
+  - id: slide-bug
+    title: "Watch Out: Lecture Slide Type Bug (int Trap)"
+    level: 2
+  - id: p2p-version
+    title: "Point-to-Point Version (MPI_Send & MPI_Recv)"
+    level: 2
+  - id: reduce-version
+    title: Collective Version (MPI_Reduce)
+    level: 2
+  - id: non-divisible-n
+    title: Handling Non-Divisible Number of Trapezoids
+    level: 2
+---
+## Mathematical Derivation of the Composite Trapezoidal Rule
+
+To numerically approximate the definite integral of a function $f(x)$ over an interval $[a, b]$:
+$$\text{Area} = \int_{a}^{b} f(x) \, dx$$
+
+We divide $[a, b]$ into $n$ equal sub-intervals, each of width:
+$$h = \frac{b - a}{n}$$
+
+The grid evaluation points are $x_i = a + i \cdot h$ for $i = 0, 1, \dots, n$.
+
+The area of the $i$-th individual trapezoid bounded by $[x_i, x_{i+1}]$ is:
+$$\text{Area}_i = h \cdot \frac{f(x_i) + f(x_{i+1})}{2}$$
+
+Summing over all $n$ trapezoids yields the **Composite Trapezoidal Rule**:
+$$\text{Area} = h \left[ \frac{f(x_0) + f(x_n)}{2} + \sum_{i=1}^{n-1} f(x_i) \right]$$
+
+<Diagram type="trapezoidal-geometry" caption="Composite trapezoidal rule geometry discretizing a curve into n trapezoids of base width h." />
+
+---
+
+## Analytical Worked Example
+
+Let $f(x) = 2x + 3$ on the interval $[a, b] = [0, 2]$ with $n = 4$ trapezoids:
+- Base width: $h = \frac{2 - 0}{4} = 0.5$.
+- Grid points: $x_0 = 0.0, \; x_1 = 0.5, \; x_2 = 1.0, \; x_3 = 1.5, \; x_4 = 2.0$.
+- Function values:
+  - $f(x_0) = 2(0) + 3 = 3$
+  - $f(x_1) = 2(0.5) + 3 = 4$
+  - $f(x_2) = 2(1.0) + 3 = 5$
+  - $f(x_3) = 2(1.5) + 3 = 6$
+  - $f(x_4) = 2(2.0) + 3 = 7$
+- Applying formula:
+  $$\text{Area} = 0.5 \left[ \frac{3 + 7}{2} + (4 + 5 + 6) \right] = 0.5 \times [5 + 15] = 0.5 \times 20 = 10.0$$
+- Exact analytical integral: $\int_0^2 (2x + 3) \, dx = [x^2 + 3x]_0^2 = (4 + 6) - 0 = 10.0$.
+
+---
+
+## Watch Out: Lecture Slide Type Bug (int Trap)
+
+<Callout type="watch-out" title="CRITICAL SLIDE ERROR: INT TRAP()">
+In Unit IV Part 3 Slide 20, the serial prototype is mistakenly declared as:
+```c
+/* BUG IN LECTURE SLIDE */
+int Trap(double a, double b, int n, double h)
+```
+Because the return type is declared as `int`, any non-integer integral result (e.g. $10.456$) is truncated to an integer ($10$), introducing catastrophic error into numerical results! Always declare `Trap` returning `double`:
+```c
+/* CORRECT SIGNATURE */
+double Trap(double a, double b, int n, double h)
+```
+</Callout>
+
+---
+
+## Point-to-Point Version (MPI_Send & MPI_Recv)
+
+In this implementation, worker processes ($1 \dots P-1$) transmit their local integral approximations to Process 0 using `MPI_Send`. Process 0 aggregates the total sum using `MPI_Recv`.
+
+```c
+#include <stdio.h>
+#include <mpi.h>
+
+double f(double x) {
+    return 2.0 * x + 3.0;
+}
+
+double Trap(double left, double right, int count, double h) {
+    double estimate = (f(left) + f(right)) / 2.0;
+    for (int i = 1; i < count; i++) {
+        double x = left + i * h;
+        estimate += f(x);
+    }
+    return estimate * h;
+}
+
+int main(int argc, char** argv) {
+    int my_rank, comm_sz;
+    double a = 0.0, b = 2.0;
+    int n = 1024;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+    double h = (b - a) / (double)n;
+    int local_n = n / comm_sz;
+
+    double local_a = a + my_rank * local_n * h;
+    double local_b = local_a + local_n * h;
+    double local_integral = Trap(local_a, local_b, local_n, h);
+
+    if (my_rank != 0) {
+        MPI_Send(&local_integral, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    } else {
+        double total_integral = local_integral;
+        for (int source = 1; source < comm_sz; source++) {
+            double temp;
+            MPI_Recv(&temp, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            total_integral += temp;
+        }
+        printf("Point-to-Point Result: Integral = %f (Exact = 10.000000)\n", total_integral);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+```
+- **Compile:** `mpicc -O2 trap_p2p.c -o trap_p2p`
+- **Run:** `mpirun -np 4 ./trap_p2p`
+
+---
+
+## Collective Version (MPI_Reduce)
+
+The collective version replaces the loop of point-to-point calls with `MPI_Reduce`, achieving logarithmic $O(\log P)$ tree reduction. In accordance with PDC Lab 9, we configure `root = comm_sz - 1` (the maximum process rank):
+
+```c
+#include <stdio.h>
+#include <mpi.h>
+
+double f(double x) {
+    return 2.0 * x + 3.0;
+}
+
+double Trap(double left, double right, int count, double h) {
+    double estimate = (f(left) + f(right)) / 2.0;
+    for (int i = 1; i < count; i++) {
+        double x = left + i * h;
+        estimate += f(x);
+    }
+    return estimate * h;
+}
+
+int main(int argc, char** argv) {
+    int my_rank, comm_sz;
+    double a = 0.0, b = 2.0;
+    int n = 1024;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+    double h = (b - a) / (double)n;
+    int local_n = n / comm_sz;
+    double local_a = a + my_rank * local_n * h;
+    double local_b = local_a + local_n * h;
+
+    double local_integral = Trap(local_a, local_b, local_n, h);
+    double total_integral = 0.0;
+    int root = comm_sz - 1; /* Maximum rank as root */
+
+    MPI_Reduce(&local_integral, &total_integral, 1, MPI_DOUBLE, MPI_SUM, root, MPI_COMM_WORLD);
+
+    if (my_rank == root) {
+        printf("MPI_Reduce Result at Max Rank %d: %f (Exact = 10.000000)\n", root, total_integral);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+```
+
+---
+
+## Handling Non-Divisible Number of Trapezoids
+
+When the total number of trapezoids $n$ is not cleanly divisible by process count $p$ ($n \pmod p \neq 0$), naive division truncates remainder trapezoids.
+
+### The Correct Uneven Partitioning Algorithm
+Distribute the remainder $R = n \pmod p$ by assigning $1$ extra trapezoid to each of the first $R$ ranks:
+
+```c
+int base_n = n / comm_sz;
+int remainder = n % comm_sz;
+
+int local_n;
+double local_a, local_b;
+
+if (my_rank < remainder) {
+    local_n = base_n + 1;
+    local_a = a + my_rank * local_n * h;
+} else {
+    local_n = base_n;
+    local_a = a + (remainder * (base_n + 1) + (my_rank - remainder) * base_n) * h;
+}
+local_b = local_a + local_n * h;
+```
+This guarantees that $\sum_{i=0}^{p-1} \text{local\_n}_i = n$ exactly!

@@ -1,0 +1,202 @@
+[
+  {
+    "id": "mpi-01-basics",
+    "title": "Parallel Computing Basics & Amdahl's Law",
+    "category": "MPI Topic",
+    "path": "/mpi/01-basics/",
+    "keywords": "mpi 01-basics parallel computing basics & amdahl's law fundamental concepts of parallel computing, shared vs distributed memory, the spmd model, speedup and efficiency metrics, amdahl's law, and foster's pcam methodology.",
+    "snippet": "Fundamental concepts of parallel computing, shared vs distributed memory, the SPMD model, speedup and efficiency metrics, Amdahl's Law, and Foster's PCAM methodology."
+  },
+  {
+    "id": "mpi-02-foundations",
+    "title": "MPI Foundations & Environment Setup",
+    "category": "MPI Topic",
+    "path": "/mpi/02-foundations/",
+    "keywords": "mpi 02-foundations mpi foundations & environment setup core mpi lifecycle routines, communicator querying, compilation and execution commands, barrier synchronization, and deterministic rank-ordered output.",
+    "snippet": "Core MPI lifecycle routines, communicator querying, compilation and execution commands, barrier synchronization, and deterministic rank-ordered output."
+  },
+  {
+    "id": "mpi-03-point-to-point",
+    "title": "Point-to-Point Communication & Deadlock Dynamics",
+    "category": "MPI Topic",
+    "path": "/mpi/03-point-to-point/",
+    "keywords": "mpi 03-point-to-point point-to-point communication & deadlock dynamics detailed guide to mpi_send, mpi_recv, status structures, wildcards, blocking semantics, mpi_sendrecv, mpi_proc_null, deadlock prevention, and three complete programs.",
+    "snippet": "Detailed guide to MPI_Send, MPI_Recv, status structures, wildcards, blocking semantics, MPI_Sendrecv, MPI_PROC_NULL, deadlock prevention, and three complete programs."
+  },
+  {
+    "id": "mpi-04-collectives",
+    "title": "Collective Communications & The Chooser Table",
+    "category": "MPI Topic",
+    "path": "/mpi/04-collectives/",
+    "keywords": "mpi 04-collectives collective communications & the chooser table comprehensive analysis of all mpi collective routines (bcast, scatter, gather, allgather, alltoall, reduce, allreduce, scan) with formal rules, syntax, and a chooser reference table.",
+    "snippet": "Comprehensive analysis of all MPI collective routines (Bcast, Scatter, Gather, Allgather, Alltoall, Reduce, Allreduce, Scan) with formal rules, syntax, and a chooser reference table."
+  },
+  {
+    "id": "mpi-05-data-distributions",
+    "title": "Data Distributions & Parallel Vector Addition",
+    "category": "MPI Topic",
+    "path": "/mpi/05-data-distributions/",
+    "keywords": "mpi 05-data-distributions data distributions & parallel vector addition mathematical partitioning schemes (block, cyclic, block-cyclic), parallel vector addition implementation, and i/o distribution with read_vector.",
+    "snippet": "Mathematical partitioning schemes (Block, Cyclic, Block-Cyclic), parallel vector addition implementation, and I/O distribution with Read_vector."
+  },
+  {
+    "id": "mpi-06-trapezoidal-rule",
+    "title": "Parallelizing the Trapezoidal Rule",
+    "category": "MPI Topic",
+    "path": "/mpi/06-trapezoidal-rule/",
+    "keywords": "mpi 06-trapezoidal-rule parallelizing the trapezoidal rule complete derivation of the composite trapezoidal rule, point-to-point send/recv implementation, collective mpi_reduce implementation, handling non-divisible intervals, and lecture-slide pitfalls.",
+    "snippet": "Complete derivation of the composite trapezoidal rule, Point-to-Point Send/Recv implementation, Collective MPI_Reduce implementation, handling non-divisible intervals, and lecture-slide pitfalls."
+  },
+  {
+    "id": "mpi-07-odd-even-sort",
+    "title": "Parallel Odd-Even Transposition Sort",
+    "category": "MPI Topic",
+    "path": "/mpi/07-odd-even-sort/",
+    "keywords": "mpi 07-odd-even-sort parallel odd-even transposition sort parallel odd-even transposition sort algorithm, phase theorem, partner calculations, merge-low and merge-high routines, and handling odd process counts and boundary idle ranks.",
+    "snippet": "Parallel Odd-Even Transposition Sort algorithm, phase theorem, partner calculations, Merge-Low and Merge-High routines, and handling odd process counts and boundary idle ranks."
+  },
+  {
+    "id": "mpi-08-matrix-multiplication",
+    "title": "Matrix Multiplication & Cannon's Algorithm",
+    "category": "MPI Topic",
+    "path": "/mpi/08-matrix-multiplication/",
+    "keywords": "mpi 08-matrix-multiplication matrix multiplication & cannon's algorithm analysis of hadamard vs true matrix product, 1-d column-wise cost model, row-striped matrix-vector multiplication, and cannon's 2d torus algorithm with full cartesian topology code.",
+    "snippet": "Analysis of Hadamard vs true matrix product, 1-D column-wise cost model, Row-striped matrix-vector multiplication, and Cannon's 2D Torus algorithm with full Cartesian topology code."
+  },
+  {
+    "id": "mpi-09-graph-search",
+    "title": "Parallel Graph Search with MPI (BFS & DFS)",
+    "category": "MPI Topic",
+    "path": "/mpi/09-graph-search/",
+    "keywords": "mpi 09-graph-search parallel graph search with mpi (bfs & dfs) level-synchronous parallel bfs, parallel dfs subtree distribution, serial baselines, and worked walkthrough of the 15-node tree from pdc lab 10.",
+    "snippet": "Level-synchronous parallel BFS, parallel DFS subtree distribution, serial baselines, and worked walkthrough of the 15-node tree from PDC Lab 10."
+  },
+  {
+    "id": "mpi-10-pitfalls-checklist",
+    "title": "MPI Pitfalls & Exam Debugging Checklist",
+    "category": "MPI Topic",
+    "path": "/mpi/10-pitfalls-checklist/",
+    "keywords": "mpi 10-pitfalls-checklist mpi pitfalls & exam debugging checklist practical troubleshooting guide, root-cause analyses of deadlock scenarios, buffer truncation errors, communicator mismatch, and pre-submission checklist for lab exams.",
+    "snippet": "Practical troubleshooting guide, root-cause analyses of deadlock scenarios, buffer truncation errors, communicator mismatch, and pre-submission checklist for lab exams."
+  },
+  {
+    "id": "openmp-01-fork-join-model",
+    "title": "OpenMP Execution Model & Fork-Join Paradigm",
+    "category": "OpenMP Topic",
+    "path": "/openmp/01-fork-join-model/",
+    "keywords": "openmp omp 01-fork-join-model openmp execution model & fork-join paradigm principles of multi-threaded shared-memory programming, posix processes vs lightweight threads, compiler flags, omp_num_threads, and thread non-determinism.",
+    "snippet": "Principles of multi-threaded shared-memory programming, POSIX processes vs lightweight threads, compiler flags, OMP_NUM_THREADS, and thread non-determinism."
+  },
+  {
+    "id": "openmp-02-directives-and-clauses",
+    "title": "OpenMP Directives & Scoping Clauses",
+    "category": "OpenMP Topic",
+    "path": "/openmp/02-directives-and-clauses/",
+    "keywords": "openmp omp 02-directives-and-clauses openmp directives & scoping clauses in-depth analysis of openmp scoping rules, private, firstprivate, lastprivate, shared, default(none), num_threads, and conditional if clauses.",
+    "snippet": "In-depth analysis of OpenMP scoping rules, private, firstprivate, lastprivate, shared, default(none), num_threads, and conditional if clauses."
+  },
+  {
+    "id": "openmp-03-work-sharing",
+    "title": "OpenMP Worksharing Constructs & Scheduling Policies",
+    "category": "OpenMP Topic",
+    "path": "/openmp/03-work-sharing/",
+    "keywords": "openmp omp 03-work-sharing openmp worksharing constructs & scheduling policies detailed guide to #pragma omp for, loop collapse, static/dynamic/guided scheduling with iteration mapping visualizers, sections, single, and nowait.",
+    "snippet": "Detailed guide to #pragma omp for, loop collapse, static/dynamic/guided scheduling with iteration mapping visualizers, sections, single, and nowait."
+  },
+  {
+    "id": "openmp-04-synchronisation",
+    "title": "OpenMP Synchronisation, Locks & Data Races",
+    "category": "OpenMP Topic",
+    "path": "/openmp/04-synchronisation/",
+    "keywords": "openmp omp 04-synchronisation openmp synchronisation, locks & data races critical sections, atomic operations, barriers, ordered directives, explicit locks (omp_set_lock), data race conditions, and race resolution techniques.",
+    "snippet": "Critical sections, atomic operations, barriers, ordered directives, explicit locks (omp_set_lock), data race conditions, and race resolution techniques."
+  },
+  {
+    "id": "openmp-05-reduction",
+    "title": "OpenMP Reduction Clause & Pi Estimation",
+    "category": "OpenMP Topic",
+    "path": "/openmp/05-reduction/",
+    "keywords": "openmp omp 05-reduction openmp reduction clause & pi estimation mathematical reduction semantics, predefined operators, custom reductions, and complete implementations of numerical pi estimation and trapezoidal rule in openmp.",
+    "snippet": "Mathematical reduction semantics, predefined operators, custom reductions, and complete implementations of Numerical Pi Estimation and Trapezoidal Rule in OpenMP."
+  },
+  {
+    "id": "openmp-06-runtime-library",
+    "title": "OpenMP Runtime Library Functions",
+    "category": "OpenMP Topic",
+    "path": "/openmp/06-runtime-library/",
+    "keywords": "openmp omp 06-runtime-library openmp runtime library functions complete reference to openmp runtime library functions (<omp.h>), querying threads, setting concurrency, timing benchmarks, dynamic thread adjustment, and nested execution.",
+    "snippet": "Complete reference to OpenMP runtime library functions (<omp.h>), querying threads, setting concurrency, timing benchmarks, dynamic thread adjustment, and nested execution."
+  },
+  {
+    "id": "openmp-07-tasks",
+    "title": "OpenMP Tasking Model (Asynchronous Tasks)",
+    "category": "OpenMP Topic",
+    "path": "/openmp/07-tasks/",
+    "keywords": "openmp omp 07-tasks openmp tasking model (asynchronous tasks) exploring dynamic task parallelism with #pragma omp task, taskwait, taskgroup, recursive fibonacci, parallel tree traversal, and when tasks beat loops.",
+    "snippet": "Exploring dynamic task parallelism with #pragma omp task, taskwait, taskgroup, recursive Fibonacci, parallel tree traversal, and when tasks beat loops."
+  },
+  {
+    "id": "openmp-08-performance",
+    "title": "OpenMP Performance, False Sharing & Scaling",
+    "category": "OpenMP Topic",
+    "path": "/openmp/08-performance/",
+    "keywords": "openmp omp 08-performance openmp performance, false sharing & scaling hardware cache hierarchy, false sharing detection and remedies, load balancing, scheduling overheads, speedup measurements, and amdahl vs gustafson laws.",
+    "snippet": "Hardware cache hierarchy, false sharing detection and remedies, load balancing, scheduling overheads, speedup measurements, and Amdahl vs Gustafson laws."
+  },
+  {
+    "id": "openmp-09-classic-algorithms",
+    "title": "Classic Parallel Algorithms in OpenMP",
+    "category": "OpenMP Topic",
+    "path": "/openmp/09-classic-algorithms/",
+    "keywords": "openmp omp 09-classic-algorithms classic parallel algorithms in openmp openmp implementations of parallel vector addition, dense matrix multiplication, parallel odd-even transposition sort, and breadth-first search.",
+    "snippet": "OpenMP implementations of parallel vector addition, dense matrix multiplication, parallel odd-even transposition sort, and breadth-first search."
+  },
+  {
+    "id": "openmp-10-hybrid-comparison",
+    "title": "Hybrid MPI + OpenMP & Technology Comparison",
+    "category": "OpenMP Topic",
+    "path": "/openmp/10-hybrid-comparison/",
+    "keywords": "openmp omp 10-hybrid-comparison hybrid mpi + openmp & technology comparison architectural rationale for hybrid mpi + openmp on cluster supercomputers, thread safety levels (mpi_init_thread), and a definitive technology comparison table.",
+    "snippet": "Architectural rationale for Hybrid MPI + OpenMP on cluster supercomputers, thread safety levels (MPI_Init_thread), and a definitive technology comparison table."
+  },
+  {
+    "id": "practice-mpi",
+    "title": "MPI Solved Questions (40+ Problems)",
+    "category": "Practice",
+    "path": "/practice/mpi/",
+    "keywords": "mpi questions practice solved conceptual output bug code",
+    "snippet": "42+ solved questions with step-by-step answers across 5 question categories."
+  },
+  {
+    "id": "practice-openmp",
+    "title": "OpenMP Solved Questions (40+ Problems)",
+    "category": "Practice",
+    "path": "/practice/openmp/",
+    "keywords": "openmp questions practice solved conceptual output bug code race condition",
+    "snippet": "42+ solved questions with step-by-step answers across 5 question categories."
+  },
+  {
+    "id": "mock-mpi",
+    "title": "Mock Lab Exam 1: MPI (3 Tasks, 50 Marks)",
+    "category": "Mock Exam",
+    "path": "/practice/mock-mpi/",
+    "keywords": "mock exam mpi lab test tasks marking scheme ring trapezoidal odd-even",
+    "snippet": "3 programming tasks with suggested time, marking scheme, and full solutions."
+  },
+  {
+    "id": "mock-openmp",
+    "title": "Mock Lab Exam 2: OpenMP (3 Tasks, 50 Marks)",
+    "category": "Mock Exam",
+    "path": "/practice/mock-openmp/",
+    "keywords": "mock exam openmp lab test tasks pi twin primes gaussian elimination",
+    "snippet": "3 programming tasks with suggested time, marking scheme, and full solutions."
+  },
+  {
+    "id": "flashcards",
+    "title": "Interactive Flashcard Revision Deck (65 Cards)",
+    "category": "Revision Tools",
+    "path": "/flashcards/",
+    "keywords": "flashcards revision terms definitions syntax pitfalls rules memory",
+    "snippet": "Flip through 65 curated revision cards covering core definitions, directives, and traps."
+  }
+]

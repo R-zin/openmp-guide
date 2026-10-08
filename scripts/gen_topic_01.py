@@ -1,0 +1,147 @@
+import os
+
+os.makedirs('content/mpi', exist_ok=True)
+os.makedirs('content/openmp', exist_ok=True)
+
+# -------------------------------------------------------------
+# 1. MPI 01: Basics
+# -------------------------------------------------------------
+mpi_01 = """---
+id: mpi-01-basics
+title: Parallel Computing Basics & Amdahl's Law
+slug: 01-basics
+technology: mpi
+order: 1
+description: Fundamental concepts of parallel computing, shared vs distributed memory, the SPMD model, speedup and efficiency metrics, Amdahl's Law, and Foster's PCAM methodology.
+readingTimeMinutes: 14
+sections:
+  - id: architectures
+    title: Shared vs Distributed Memory
+    level: 2
+  - id: spmd
+    title: The SPMD Paradigm
+    level: 2
+  - id: metrics
+    title: Performance Metrics: Speedup and Efficiency
+    level: 2
+  - id: amdahl
+    title: Amdahl's Law and Serial Bottlenecks
+    level: 2
+  - id: gustafson
+    title: Gustafson's Law (Weak Scaling)
+    level: 2
+  - id: foster
+    title: Foster's PCAM Design Methodology
+    level: 2
+---
+
+## Shared vs Distributed Memory Architectures
+
+Parallel computing systems fall fundamentally into two architectural paradigms based on how memory is addressed and physically organized:
+
+1. **Shared-Memory Systems (Symmetric Multiprocessing - SMP):**
+   - Multiple CPU processing cores access a single, unified global physical address space over a common high-speed bus or crossbar interconnect.
+   - Any core can read or write any memory location directly using standard pointer dereferencing and CPU load/store instructions.
+   - Primary programming abstraction: Multi-threading with **OpenMP** or POSIX Threads (*pthreads*).
+   - Major hardware challenges: Bus contention, memory bandwidth limits, and cache coherency overhead (MESI/MOESI protocols).
+
+2. **Distributed-Memory Systems (Commodity Clusters / Massively Parallel Processors):**
+   - Each compute node consists of an autonomous processor paired with its own private physical RAM.
+   - Memory is completely disjoint; Processor A cannot directly read or write the address space of Processor B.
+   - Coordination requires explicit message passing over an external interconnect (e.g. Ethernet, InfiniBand).
+   - Primary programming abstraction: **Message Passing Interface (MPI)**.
+
+<Diagram type="memory-architecture" caption="Architectural comparison: Shared-memory bus topology vs Distributed-memory networked nodes." />
+
+## The SPMD Paradigm
+
+MPI operates almost exclusively on the **Single Program, Multiple Data (SPMD)** model:
+
+- A single compiled binary executable is distributed and simultaneously launched across $P$ processors.
+- Every process executes the identical machine instructions from `main()`.
+- Processes differentiate their execution paths dynamically by inspecting their unique process rank identifier (`my_rank`):
+
+```c
+if (my_rank == 0) {
+    /* Master process: Coordinator, File I/O, Collectives root */
+    Read_input_data(&a, &b, &n);
+} else {
+    /* Worker process: Receive subset of data, Compute */
+    Compute_local_slice();
+}
+```
+
+## Performance Metrics: Speedup and Efficiency
+
+When parallelizing any sequential computation, performance is evaluated using two primary dimensionless metrics:
+
+### 1. Speedup ($S$)
+Speedup measures the relative performance improvement achieved by running on $p$ parallel processors compared to the best sequential implementation on a single processor:
+
+$$S(p) = \\frac{T_{\\text{serial}}}{T_{\\text{parallel}}(p)}$$
+
+- **Linear Speedup:** $S(p) = p$. The ideal theoretical limit where doubling processors halves the elapsed runtime.
+- **Sub-linear Speedup:** $S(p) < p$. The realistic regime caused by communication latency, load imbalance, and serial bottlenecks.
+- **Super-linear Speedup:** $S(p) > p$. Occasionally observed in practice when aggregating cache memory across $p$ nodes causes the working set to fit entirely inside fast L2/L3 caches.
+
+### 2. Parallel Efficiency ($E$)
+Parallel efficiency normalizes speedup by the processor count to quantify resource utilization:
+
+$$E(p) = \\frac{S(p)}{p} = \\frac{T_{\\text{serial}}}{p \\times T_{\\text{parallel}}(p)}$$
+
+- An efficiency of $1.0$ ($100\\%$) represents perfect linear speedup.
+- As processor count $p$ scales upwards, efficiency inevitably declines due to communication and synchronization overheads.
+
+## Amdahl's Law and Serial Bottlenecks
+
+Formulated by Gene Amdahl in 1967, **Amdahl's Law** establishes the strict theoretical upper bound on speedup when problem size is fixed (known as *Strong Scaling*).
+
+Let $P$ represent the fraction of a program that is strictly parallelizable ($0 \\le P \\le 1$), and $(1 - P)$ represent the strictly sequential fraction (e.g., initial file parsing, terminal I/O, process initialization).
+
+$$S_{\\text{Amdahl}}(p) = \\frac{1}{(1 - P) + \\frac{P}{p}}$$
+
+### The Asymptotic Limit
+As the processor count approaches infinity ($p \\to \\infty$), the parallel term $\\frac{P}{p}$ vanishes:
+
+$$S_{\\max} = \\lim_{p \\to \\infty} S(p) = \\frac{1}{1 - P}$$
+
+<Callout type="watch-out" title="THE SERIAL BOTTLENECK RULE">
+If only $10\\%$ of your algorithm is sequential ($P = 0.90$), your maximum theoretical speedup can NEVER exceed $\\frac{1}{0.10} = 10\\times$, even if you allocate 1,000,000 cluster nodes!
+</Callout>
+
+<AmdahlCalculator />
+
+## Gustafson's Law (Weak Scaling)
+
+In 1988, John Gustafson observed that in real-world High Performance Computing (HPC), researchers do not run fixed-size miniature datasets on massive supercomputers. Instead, as more computing cores become available, the **problem size scales up** to consume available memory:
+
+$$S_{\\text{Gustafson}}(p) = (1 - P) + P \\times p$$
+
+Under Gustafson's Law (*Weak Scaling*), the speedup scales linearly with processor count because the parallel workload grows proportionally with hardware capacity while sequential overhead remains largely constant.
+
+## Foster's PCAM Design Methodology
+
+Ian Foster formulated a rigorous 4-step engineering methodology for designing parallel algorithms:
+
+1. **Partitioning (Decomposition):**
+   - Decompose computational tasks and data structures into a large number of fine-grained primitive tasks.
+   - Disregard machine constraints; maximize potential concurrency.
+   - Types: *Domain Decomposition* (dividing data arrays) and *Functional Decomposition* (dividing algorithmic pipeline stages).
+
+2. **Communication:**
+   - Analyze coordinate flows and data dependencies between primitive tasks.
+   - Classify communication patterns: Local (neighbor-to-neighbor) vs Global (all-to-all), Structured (grid/ring) vs Unstructured (sparse graphs).
+
+3. **Agglomeration (Grouping):**
+   - Group fine-grained primitive tasks into larger coarse-grained chunks.
+   - Goal: Balance the communication-to-computation ratio. Agglomeration reduces message startup latency ($t_s$) by transmitting fewer, larger payload packets.
+
+4. **Mapping:**
+   - Assign agglomerated tasks to physical processing nodes and cores.
+   - Goal: Maximize load balance across processors while mapping heavily communicating task pairs to physically proximate nodes to minimize network hop latency.
+"""
+
+with open('content/mpi/01-basics.mdx', 'w') as f:
+    f.write(mpi_01)
+
+print('Generated content/mpi/01-basics.mdx')

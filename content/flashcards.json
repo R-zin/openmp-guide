@@ -1,0 +1,464 @@
+[
+  {
+    "id": "fc-01",
+    "technology": "mpi",
+    "category": "MPI BASICS",
+    "front": "What is the exact signature and purpose of MPI_Init?",
+    "back": "int MPI_Init(int *argc, char ***argv);\nInitializes the MPI execution environment. Must be called before any other MPI routine (except MPI_Initialized). Returns MPI_SUCCESS on success.",
+    "codeSnippet": "MPI_Init(&argc, &argv);"
+  },
+  {
+    "id": "fc-02",
+    "technology": "mpi",
+    "category": "MPI BASICS",
+    "front": "What is the role of MPI_Finalize and what happens if code executes after it?",
+    "back": "int MPI_Finalize(void);\nCleans up all MPI state and resources. No MPI functions can be called after MPI_Finalize. Non-MPI C code can run, but calling MPI routines causes undefined behavior.",
+    "codeSnippet": "MPI_Finalize();"
+  },
+  {
+    "id": "fc-03",
+    "technology": "mpi",
+    "category": "MPI BASICS",
+    "front": "What do MPI_Comm_rank and MPI_Comm_size return?",
+    "back": "MPI_Comm_rank queries the process rank ID (0 to size - 1) in the communicator.\nMPI_Comm_size queries the total number of processes in the communicator.",
+    "codeSnippet": "int rank, size;\nMPI_Comm_rank(MPI_COMM_WORLD, &rank);\nMPI_Comm_size(MPI_COMM_WORLD, &size);"
+  },
+  {
+    "id": "fc-04",
+    "technology": "mpi",
+    "category": "MPI BASICS",
+    "front": "What is the SPMD model in MPI?",
+    "back": "Single Program, Multiple Data: Identical binary executable runs on every process, but each process takes distinct control paths and works on distinct data partitions based on its rank (my_rank)."
+  },
+  {
+    "id": "fc-05",
+    "technology": "mpi",
+    "category": "MPI BASICS",
+    "front": "How do you measure wall-clock execution time in MPI?",
+    "back": "MPI_Wtime() returns an elapsed wall-clock time in seconds as a double precision float.\nCall it before and after the timed region.",
+    "codeSnippet": "double start = MPI_Wtime();\n/* computation */\ndouble elapsed = MPI_Wtime() - start;"
+  },
+  {
+    "id": "fc-06",
+    "technology": "mpi",
+    "category": "MPI BASICS",
+    "front": "What is MPI_COMM_WORLD?",
+    "back": "The default predefined communicator that includes all processes spawned when the application is launched by mpirun / mpiexec."
+  },
+  {
+    "id": "fc-07",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "What are the 6 parameters of standard MPI_Send?",
+    "back": "int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);\n1. buf: buffer pointer\n2. count: number of elements\n3. datatype: MPI type\n4. dest: destination rank\n5. tag: message tag (integer >= 0)\n6. comm: communicator"
+  },
+  {
+    "id": "fc-08",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "What are the 7 parameters of standard MPI_Recv?",
+    "back": "int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status);\nNote the 7th parameter: pointer to MPI_Status structure (or MPI_STATUS_IGNORE)."
+  },
+  {
+    "id": "fc-09",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "What information does MPI_Status provide and how do you query the count?",
+    "back": "status.MPI_SOURCE gives sender rank; status.MPI_TAG gives tag; status.MPI_ERROR gives error code.\nTo query received element count, call MPI_Get_count(&status, datatype, &count)."
+  },
+  {
+    "id": "fc-10",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "What are MPI_ANY_SOURCE and MPI_ANY_TAG?",
+    "back": "Wildcard constants usable only in MPI_Recv source and tag arguments. They allow receiving a message from any process or with any tag. Actual sender and tag are retrieved via MPI_Status."
+  },
+  {
+    "id": "fc-11",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "What is MPI_PROC_NULL and when is it useful?",
+    "back": "A special dummy rank constant. Sending to or receiving from MPI_PROC_NULL has no effect and returns immediately with success. Essential for boundary processes in ring, grid, or odd-even sorting."
+  },
+  {
+    "id": "fc-12",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "Why does symmetric MPI_Send cause deadlock with large messages?",
+    "back": "MPI_Send semantics are blocking. For small messages, eager protocol buffers data into system memory. For large messages, rendezvous protocol blocks until receiver posts MPI_Recv. If both ranks call MPI_Send first, both block indefinitely."
+  },
+  {
+    "id": "fc-13",
+    "technology": "mpi",
+    "category": "MPI POINT-TO-POINT",
+    "front": "What is MPI_Sendrecv and why does it prevent deadlock?",
+    "back": "int MPI_Sendrecv(..., dest, sendtag, ..., source, recvtag, comm, status);\nExecutes a simultaneous send and receive in a single call. The MPI runtime schedules buffers internally so circular dependency deadlocks cannot occur."
+  },
+  {
+    "id": "fc-14",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "What are the 3 fundamental rules for MPI Collective Communications?",
+    "back": "1. ALL processes in communicator must call the collective routine.\n2. Must be called in the exact same program order across all processes.\n3. Collective routines do NOT take message tags."
+  },
+  {
+    "id": "fc-15",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "What is the signature and behavior of MPI_Bcast?",
+    "back": "int MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm);\nRoot process broadcasts its buffer content to all other processes in comm."
+  },
+  {
+    "id": "fc-16",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "What is the key difference between MPI_Bcast and MPI_Scatter?",
+    "back": "MPI_Bcast sends the IDENTICAL data block of size count to every process.\nMPI_Scatter divides the root send_buffer into disjoint chunks of size sendcount and sends the i-th chunk to process i."
+  },
+  {
+    "id": "fc-17",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "In MPI_Scatter, what does sendcount specify?",
+    "back": "sendcount is the number of elements sent to EACH individual process, NOT the total array size! The root send buffer must hold at least sendcount * comm_sz elements."
+  },
+  {
+    "id": "fc-18",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "What is the difference between MPI_Reduce and MPI_Allreduce?",
+    "back": "MPI_Reduce combines elements using an operation (e.g. MPI_SUM) and places the result ONLY on the specified root rank.\nMPI_Allreduce combines elements and delivers the identical reduction result to ALL ranks (no root argument)."
+  },
+  {
+    "id": "fc-19",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "List 5 predefined MPI reduction operations.",
+    "back": "MPI_SUM, MPI_PROD, MPI_MAX, MPI_MIN, MPI_LAND (logical AND), MPI_LOR (logical OR), MPI_BAND (bitwise AND), MPI_MAXLOC."
+  },
+  {
+    "id": "fc-20",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "What does MPI_Scan do?",
+    "back": "Computes a prefix reduction across ranks. Process rank i receives the reduction of data from processes 0, 1, ..., i inclusive."
+  },
+  {
+    "id": "fc-21",
+    "technology": "mpi",
+    "category": "MPI COLLECTIVES",
+    "front": "What is MPI_Barrier and why should it be used sparingly?",
+    "back": "Blocks caller until all processes in the communicator have invoked it. Excessive use harms performance by serializing idle processors and magnifying load imbalance."
+  },
+  {
+    "id": "fc-22",
+    "technology": "mpi",
+    "category": "MPI ALGORITHMS",
+    "front": "What is Block Partition vs Cyclic Partition of an array of n elements across p processes?",
+    "back": "Block: Process i gets continuous elements [i*(n/p) .. (i+1)*(n/p)-1].\nCyclic: Element k assigned to process (k % p). Better for load-balancing triangulated or non-uniform matrices."
+  },
+  {
+    "id": "fc-23",
+    "technology": "mpi",
+    "category": "MPI ALGORITHMS",
+    "front": "In Parallel Odd-Even Transposition Sort, how many phases are required?",
+    "back": "Exactly p phases (where p = comm_sz processes). Even phases pair rank with (rank^1); Odd phases pair rank with partner where boundary ranks 0 and p-1 may be idle."
+  },
+  {
+    "id": "fc-24",
+    "technology": "mpi",
+    "category": "MPI ALGORITHMS",
+    "front": "What is the Initial Alignment (Preskew) step in Cannon's Algorithm?",
+    "back": "For a sqrt(p) x sqrt(p) process grid:\n- Sub-matrix A(i,j) is shifted circularly LEFT by i steps.\n- Sub-matrix B(i,j) is shifted circularly UP by j steps.\nEnsures each process has matching inner product blocks ready."
+  },
+  {
+    "id": "fc-25",
+    "technology": "mpi",
+    "category": "MPI ALGORITHMS",
+    "front": "In Cannon's algorithm, what are the shifts during each iteration of the main loop?",
+    "back": "In each of the sqrt(p) iterations:\n1. Multiply local blocks: C += A * B\n2. Shift A circularly left by 1 position\n3. Shift B circularly up by 1 position"
+  },
+  {
+    "id": "fc-26",
+    "technology": "openmp",
+    "category": "OPENMP BASICS",
+    "front": "What is the OpenMP Fork-Join execution model?",
+    "back": "Execution begins as a single master thread (Thread 0). When a parallel construct is encountered, the master thread FORKS a team of worker threads. At the end of the construct, threads synchronize and JOIN back into master."
+  },
+  {
+    "id": "fc-27",
+    "technology": "openmp",
+    "category": "OPENMP BASICS",
+    "front": "What compiler flag is required for OpenMP in GCC / Clang?",
+    "back": "-fopenmp (e.g., clang -fopenmp file.c -o file or gcc -fopenmp file.c -o file). Requires including <omp.h> for runtime functions."
+  },
+  {
+    "id": "fc-28",
+    "technology": "openmp",
+    "category": "OPENMP BASICS",
+    "front": "What environment variable controls thread count in OpenMP?",
+    "back": "OMP_NUM_THREADS (e.g. export OMP_NUM_THREADS=4 in shell before executing the program)."
+  },
+  {
+    "id": "fc-29",
+    "technology": "openmp",
+    "category": "OPENMP BASICS",
+    "front": "How do you query current thread ID and total thread count in OpenMP?",
+    "back": "omp_get_thread_num() returns thread ID (0 to num_threads - 1).\nomp_get_num_threads() returns total threads in the current active parallel team.",
+    "codeSnippet": "int tid = omp_get_thread_num();\nint nthreads = omp_get_num_threads();"
+  },
+  {
+    "id": "fc-30",
+    "technology": "openmp",
+    "category": "OPENMP BASICS",
+    "front": "What is omp_get_wtime() and what does it measure?",
+    "back": "Returns double precision wall clock time in seconds since an arbitrary point in the past. Used for benchmarking high-resolution execution duration.",
+    "codeSnippet": "double t0 = omp_get_wtime();\n/* work */\ndouble t1 = omp_get_wtime();"
+  },
+  {
+    "id": "fc-31",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "What is the difference between private and firstprivate clauses?",
+    "back": "private(x): Creates an uninitialized private copy of x for each thread (original value lost inside region).\nfirstprivate(x): Creates a private copy initialized with the value of x prior to entering the construct."
+  },
+  {
+    "id": "fc-32",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "What does lastprivate do in a loop construct?",
+    "back": "lastprivate(x) copies the value from the thread that executed the sequentially LAST iteration of the loop back to the master thread variable after the loop finishes."
+  },
+  {
+    "id": "fc-33",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "Why should default(none) be used in production OpenMP code?",
+    "back": "Forces the programmer to explicitly declare the data sharing attribute (shared, private, etc.) for every variable in the construct. Catches race conditions and unintended sharing at compile time."
+  },
+  {
+    "id": "fc-34",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "What are default scoping rules for variables in OpenMP?",
+    "back": "Variables declared before parallel region are SHARED by default. Variables declared inside the parallel region (or loop control index of parallel for) are automatically PRIVATE."
+  },
+  {
+    "id": "fc-35",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "What is the if clause in #pragma omp parallel?",
+    "back": "#pragma omp parallel if(n > 1000): Evaluates the conditional expression. If false, executes sequentially with 1 thread, avoiding thread creation overhead for small problem sizes."
+  },
+  {
+    "id": "fc-36",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "What is the difference between #pragma omp single and #pragma omp master?",
+    "back": "single: Block executed by whichever thread reaches it first; has an implicit barrier at end unless nowait is added.\nmaster / masked: Executed strictly by Thread 0; has NO implicit barrier at end."
+  },
+  {
+    "id": "fc-37",
+    "technology": "openmp",
+    "category": "OPENMP DIRECTIVES",
+    "front": "What is the nowait clause and when can it be used?",
+    "back": "Removes the implicit barrier at the end of worksharing constructs (for, sections, single), allowing fast threads to proceed without waiting for slower threads."
+  },
+  {
+    "id": "fc-38",
+    "technology": "openmp",
+    "category": "OPENMP WORKSHARING",
+    "front": "What is schedule(static, chunk) in OpenMP?",
+    "back": "Iterations partitioned into blocks of size chunk and distributed to threads in round-robin fashion at compile-time/entry. Zero runtime contention; best for balanced loops."
+  },
+  {
+    "id": "fc-39",
+    "technology": "openmp",
+    "category": "OPENMP WORKSHARING",
+    "front": "What is schedule(dynamic, chunk) in OpenMP?",
+    "back": "Threads request chunks of iterations from a shared queue when idle. Best for unpredictable or uneven workloads, but incurs runtime synchronization queue overhead."
+  },
+  {
+    "id": "fc-40",
+    "technology": "openmp",
+    "category": "OPENMP WORKSHARING",
+    "front": "What is schedule(guided, chunk) in OpenMP?",
+    "back": "Chunk sizes decrease exponentially as iterations are assigned: size = max(chunk, remaining / num_threads). Mitigates queue overhead initially and balances tail latency at the end."
+  },
+  {
+    "id": "fc-41",
+    "technology": "openmp",
+    "category": "OPENMP WORKSHARING",
+    "front": "What does collapse(N) clause do in #pragma omp for?",
+    "back": "Combines N nested loops into a single linear iteration space before work sharing. Increases parallel slack and thread utilization for small outer loop bounds."
+  },
+  {
+    "id": "fc-42",
+    "technology": "openmp",
+    "category": "OPENMP WORKSHARING",
+    "front": "What canonical form must a loop follow for #pragma omp for?",
+    "back": "for (init-expr; test-expr; incr-expr)\nMust have a single loop index variable, known trip count at entry, increment must be constant step, and no break/return statements inside the loop body."
+  },
+  {
+    "id": "fc-43",
+    "technology": "openmp",
+    "category": "SYNCHRONIZATION",
+    "front": "What is a Race Condition in shared memory?",
+    "back": "When two or more threads access a shared memory location concurrently, and at least one access is a write, without synchronization. Results in nondeterministic corrupt memory."
+  },
+  {
+    "id": "fc-44",
+    "technology": "openmp",
+    "category": "SYNCHRONIZATION",
+    "front": "Compare #pragma omp atomic vs #pragma omp critical.",
+    "back": "atomic: Guards a single specific memory write (e.g. x += v) using hardware atomic instructions. Much faster.\ncritical: A generalized mutually exclusive software critical section. Serializes any block of arbitrary statements; higher overhead."
+  },
+  {
+    "id": "fc-45",
+    "technology": "openmp",
+    "category": "SYNCHRONIZATION",
+    "front": "What does reduction(operator : list) do?",
+    "back": "Creates a private copy of each variable initialized to the operator identity (e.g. 0 for +, 1 for *). Threads accumulate locally, and at the end of the construct, private copies are combined into the shared original."
+  },
+  {
+    "id": "fc-46",
+    "technology": "openmp",
+    "category": "SYNCHRONIZATION",
+    "front": "What are the identity values for OpenMP reduction operators?",
+    "back": "+ is 0; * is 1; - is 0; & is ~0; | is 0; ^ is 0; && is 1; || is 0; max is most negative value; min is most positive value."
+  },
+  {
+    "id": "fc-47",
+    "technology": "openmp",
+    "category": "SYNCHRONIZATION",
+    "front": "How do OpenMP explicit locks work?",
+    "back": "1. Declare omp_lock_t lock;\n2. omp_init_lock(&lock);\n3. omp_set_lock(&lock);\n4. /* critical region */\n5. omp_unset_lock(&lock);\n6. omp_destroy_lock(&lock);"
+  },
+  {
+    "id": "fc-48",
+    "technology": "openmp",
+    "category": "SYNCHRONIZATION",
+    "front": "What does #pragma omp barrier do?",
+    "back": "Synchronizes all threads in the enclosing team. No thread can proceed past the barrier until all other threads have reached it."
+  },
+  {
+    "id": "fc-49",
+    "technology": "openmp",
+    "category": "OPENMP TASKS",
+    "front": "When do OpenMP Tasks beat #pragma omp for loops?",
+    "back": "For irregular parallelism, recursive algorithms (e.g. Fibonacci, tree traversals, quicksort), and unbounded loops or linked-list traversals where trip count cannot be predetermined."
+  },
+  {
+    "id": "fc-50",
+    "technology": "openmp",
+    "category": "OPENMP TASKS",
+    "front": "What does #pragma omp taskwait do?",
+    "back": "Suspends the executing thread until all child tasks generated by the current task have completed execution."
+  },
+  {
+    "id": "fc-51",
+    "technology": "openmp",
+    "category": "OPENMP TASKS",
+    "front": "Why is #pragma omp single used when spawning tasks?",
+    "back": "To ensure only ONE thread traverses the recursion tree and packages tasks into the queue; otherwise, all threads would redundantly spawn identical tasks!"
+  },
+  {
+    "id": "fc-52",
+    "technology": "openmp",
+    "category": "PERFORMANCE",
+    "front": "What is False Sharing and how is it eliminated?",
+    "back": "Occurs when multiple threads modify distinct variables located on the SAME hardware cache line (typically 64 bytes). The CPU ping-pongs cache lines in invalidate state.\nFix: Pad variables or use thread-private accumulators / reduction clause."
+  },
+  {
+    "id": "fc-53",
+    "technology": "general",
+    "category": "PERFORMANCE",
+    "front": "State Amdahl's Law formula and its core insight.",
+    "back": "Speedup S = 1 / ((1 - P) + P / N), where P is parallel fraction and N is processors.\nInsight: Maximum speedup is strictly limited by the sequential fraction (1 - P). If 10% of code is serial, speedup can NEVER exceed 10x even with infinite processors."
+  },
+  {
+    "id": "fc-54",
+    "technology": "general",
+    "category": "PERFORMANCE",
+    "front": "State Gustafson's Law and how it differs from Amdahl's Law.",
+    "back": "Scaled Speedup S = (1 - P) + P * N.\nAmdahl assumes problem size is FIXED as processors increase. Gustafson assumes problem size SCALES UP proportionally with available processors (weak scaling)."
+  },
+  {
+    "id": "fc-55",
+    "technology": "general",
+    "category": "PERFORMANCE",
+    "front": "Define Speedup and Parallel Efficiency.",
+    "back": "Speedup S(p) = T_serial / T_parallel(p).\nEfficiency E(p) = S(p) / p = T_serial / (p * T_parallel(p)).\nIdeal speedup is p; ideal efficiency is 1.0 (100%)."
+  },
+  {
+    "id": "fc-56",
+    "technology": "general",
+    "category": "DESIGN METHODOLOGY",
+    "front": "What are the 4 stages of Foster's Design Methodology (PCAM)?",
+    "back": "1. Partitioning: Decompose problem into fine-grained tasks.\n2. Communication: Determine data exchange coordination among tasks.\n3. Agglomeration: Group tasks into larger chunks to balance overhead.\n4. Mapping: Assign agglomerated tasks to physical processes/cores."
+  },
+  {
+    "id": "fc-57",
+    "technology": "mpi",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: What is wrong with declaring \"int Trap(...)\" returning area?",
+    "back": "A classic lecture slide bug: Trapezoid area represents an integral which is a real number. Returning int truncates decimals, producing completely wrong integral calculations! Must return double.",
+    "codeSnippet": "/* BUG in slide */: int Trap(double a, double b, int n, double h);\n/* CORRECT */: double Trap(double a, double b, int n, double h);"
+  },
+  {
+    "id": "fc-58",
+    "technology": "mpi",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: For odd comm_sz in Odd-Even Sort, what is partner for rank comm_sz - 1 in even phases?",
+    "back": "If comm_sz is odd, the last process (rank comm_sz - 1) has no partner in even phases (partner = comm_sz or -1). It must remain IDLE, or use MPI_PROC_NULL to avoid hanging."
+  },
+  {
+    "id": "fc-59",
+    "technology": "openmp",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: Why does placing #pragma omp critical inside a loop often make code slower than serial?",
+    "back": "Every iteration acquires and releases a mutex lock across all threads, destroying cache locality and serializing work with high atomic lock contention overhead. Put critical outside loops or use reduction!"
+  },
+  {
+    "id": "fc-60",
+    "technology": "openmp",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: What happens if you declare a shared loop counter: int i; #pragma omp parallel for private(i)?",
+    "back": "In OpenMP C/C++, the loop iteration variable in #pragma omp for is AUTOMATICALLY private. However, variables declared outside the construct and accessed inside without clause default to SHARED."
+  },
+  {
+    "id": "fc-61",
+    "technology": "mpi",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: Can you call MPI_Recv with a count smaller than the sent message size?",
+    "back": "NO! In MPI, receiving a buffer with count < actual sent elements causes an MPI_ERR_TRUNCATE error and aborts execution. The receive buffer must be >= sent message size."
+  },
+  {
+    "id": "fc-62",
+    "technology": "mpi",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: In MPI_Scatter, if array has 16 ints and comm_sz is 4, what should sendcount be?",
+    "back": "sendcount MUST be 4 (not 16!). sendcount is the count PER PROCESS, not total count. Passing 16 reads out of bounds and crashes!"
+  },
+  {
+    "id": "fc-63",
+    "technology": "openmp",
+    "category": "EXAM PITFALLS",
+    "front": "WATCH OUT: Why must omp_set_lock never be called recursively by the same thread?",
+    "back": "Simple OpenMP locks (omp_lock_t) are NOT re-entrant! Calling omp_set_lock on an already-owned lock causes self-deadlock. Use nested locks (omp_nest_lock_t) for recursive calls."
+  },
+  {
+    "id": "fc-64",
+    "technology": "general",
+    "category": "HYBRID MPI + OPENMP",
+    "front": "When is Hybrid MPI + OpenMP superior to pure MPI?",
+    "back": "On multi-core cluster nodes (e.g. 64 cores per node). Pure MPI uses 64 OS processes per node (redundant memory copies and network stack overhead). Hybrid uses 1 MPI process per node with 64 OpenMP threads sharing node RAM."
+  },
+  {
+    "id": "fc-65",
+    "technology": "general",
+    "category": "HYBRID MPI + OPENMP",
+    "front": "What are the 4 MPI thread support levels for hybrid programming?",
+    "back": "1. MPI_THREAD_SINGLE: Only one thread executes.\n2. MPI_THREAD_FUNNELED: Only the master thread makes MPI calls.\n3. MPI_THREAD_SERIALIZED: Multiple threads make MPI calls, but only one at a time.\n4. MPI_THREAD_MULTIPLE: Any thread can make MPI calls concurrently at any time."
+  }
+]

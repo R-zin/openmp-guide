@@ -1,0 +1,181 @@
+---
+id: mpi-02-foundations
+title: "MPI Foundations & Environment Setup"
+slug: 02-foundations
+technology: mpi
+order: 2
+description: Core MPI lifecycle routines, communicator querying, compilation and execution commands, barrier synchronization, and deterministic rank-ordered output.
+readingTimeMinutes: 12
+sections:
+  - id: lifecycle
+    title: The MPI Lifecycle Routines
+    level: 2
+  - id: compile-run
+    title: Compiling and Running MPI Applications
+    level: 2
+  - id: hello-world
+    title: Complete Hello World Implementation
+    level: 2
+  - id: barrier-order
+    title: Barrier-Ordered Sequential Output
+    level: 2
+  - id: timing
+    title: Wall-Clock Benchmarking with MPI_Wtime
+    level: 2
+---
+## The MPI Lifecycle Routines
+
+Every standard MPI application revolves around four indispensable foundation functions:
+
+### 1. `MPI_Init`
+Initializes the MPI execution runtime.
+```c
+int MPI_Init(int *argc, char ***argv);
+```
+- Must be called before any other MPI routine (with the sole exception of `MPI_Initialized`).
+- Takes pointers to `argc` and `argv`. The MPI launcher (`mpirun`) injects command-line arguments, which `MPI_Init` strips out so your program receives only user-defined flags.
+
+### 2. `MPI_Comm_rank`
+Queries the unique rank of the calling process within the specified communicator:
+```c
+int MPI_Comm_rank(MPI_Comm comm, int *rank);
+```
+- Ranks are continuous integers from $0$ to $\text{comm\_size} - 1$.
+- `rank = 0` is conventionally the designated master/root coordinator.
+
+### 3. `MPI_Comm_size`
+Queries the total number of processes participating in the communicator:
+```c
+int MPI_Comm_size(MPI_Comm comm, int *size);
+```
+
+### 4. `MPI_Finalize`
+Cleans up all internal MPI structures, pending buffers, and network virtual channels:
+```c
+int MPI_Finalize(void);
+```
+- Must be the final MPI routine invoked. Calling any MPI routine after `MPI_Finalize` produces undefined behavior.
+
+## Compiling and Running MPI Applications
+
+MPI programs are compiled using wrapper scripts provided by your MPI implementation (OpenMPI or MPICH). These wrappers automatically link required MPI headers and shared libraries (`libmpi.so` or `libmpi.dylib`):
+
+### Compilation
+```bash
+mpicc -Wall -O2 hello_mpi.c -o hello_mpi
+```
+
+### Execution
+Launch the executable across $N$ processes using `mpirun` or `mpiexec`:
+```bash
+mpirun -np 4 ./hello_mpi
+```
+
+<Callout type="note" title="THE SPMD NATURE OF STDOUT">
+Standard output (`stdout`) from all processes is redirected over network sockets back to the terminal where `mpirun` was executed. Because processes run on separate CPU cores at independent clock speeds, output arrival order is non-deterministic by default!
+</Callout>
+
+## Complete Hello World Implementation
+
+Below is a complete, compilable MPI Hello World program:
+
+```c
+#include <stdio.h>
+#include <mpi.h>
+
+int main(int argc, char** argv) {
+    int my_rank, comm_sz;
+
+    /* Initialize the MPI execution environment */
+    MPI_Init(&argc, &argv);
+
+    /* Get the process rank within the global communicator */
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    /* Get the total number of processes */
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+    printf("Greetings from process rank %d of %d!\n", my_rank, comm_sz);
+
+    /* Clean up MPI resources */
+    MPI_Finalize();
+    return 0;
+}
+```
+
+- **Compile:** `mpicc -O2 hello_mpi.c -o hello_mpi`
+- **Run:** `mpirun -np 4 ./hello_mpi`
+- **Expected Output:** (Arbitrary rank order)
+```text
+Greetings from process rank 0 of 4!
+Greetings from process rank 2 of 4!
+Greetings from process rank 1 of 4!
+Greetings from process rank 3 of 4!
+```
+
+<HelloSimulator />
+
+## Barrier-Ordered Sequential Output
+
+During debugging or lab exams, you are often asked to print outputs from processes in **strict numerical rank order** (Rank 0 first, then Rank 1, ..., Rank $P-1$).
+
+To force sequential ordering without point-to-point token passing, use an iteration loop coupled with `MPI_Barrier`:
+
+```c
+#include <stdio.h>
+#include <mpi.h>
+
+int main(int argc, char** argv) {
+    int rank, size;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    for (int p = 0; p < size; p++) {
+        if (rank == p) {
+            printf("Rank %d of %d reporting in order\n", rank, size);
+            fflush(stdout); /* Guarantee flush before barrier */
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+```
+
+- **Compile:** `mpicc -O2 ordered.c -o ordered`
+- **Run:** `mpirun -np 4 ./ordered`
+- **Expected Output:**
+```text
+Rank 0 of 4 reporting in order
+Rank 1 of 4 reporting in order
+Rank 2 of 4 reporting in order
+Rank 3 of 4 reporting in order
+```
+
+<Callout type="watch-out" title="ALWAYS CALL FFLUSH(STDOUT)">
+C's `printf` buffers lines internally. If you call `MPI_Barrier` without `fflush(stdout)`, process $p$ might exit the barrier while its printed text still sits in local buffer memory, destroying the visual ordering!
+</Callout>
+
+## Wall-Clock Benchmarking with MPI_Wtime
+
+To measure elapsed parallel execution time accurately, use `MPI_Wtime()`:
+
+```c
+double start_time = MPI_Wtime();
+
+/* Parallel computational workload */
+Do_heavy_computation();
+
+double end_time = MPI_Wtime();
+double local_elapsed = end_time - start_time;
+
+/* Collect maximum elapsed time across all processes */
+double max_elapsed;
+MPI_Reduce(&local_elapsed, &max_elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+if (rank == 0) {
+    printf("Total parallel execution time: %f seconds\n", max_elapsed);
+}
+```

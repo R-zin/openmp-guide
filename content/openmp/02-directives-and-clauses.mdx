@@ -1,0 +1,165 @@
+---
+id: omp-02-directives-and-clauses
+title: "OpenMP Directives & Scoping Clauses"
+slug: 02-directives-and-clauses
+technology: mpi
+order: 2
+description: In-depth analysis of OpenMP scoping rules, private, firstprivate, lastprivate, shared, default(none), num_threads, and conditional if clauses.
+readingTimeMinutes: 16
+sections:
+  - id: parallel-directive
+    title: The Parallel Directive
+    level: 2
+  - id: scoping-clauses
+    title: "Data-Sharing Clauses: Private, Firstprivate, and Shared"
+    level: 2
+  - id: lastprivate
+    title: The Lastprivate Clause
+    level: 2
+  - id: default-none
+    title: "Best Practice: default(none)"
+    level: 2
+  - id: conditional-clauses
+    title: "Runtime Control Clauses: num_threads and if"
+    level: 2
+  - id: complete-code
+    title: Complete Scoping Verification Program
+    level: 2
+---
+## The Parallel Directive
+
+The `#pragma omp parallel` directive defines a parallel region executed by a team of threads:
+```c
+#pragma omp parallel [clause[[,] clause] ...]
+{
+    /* Structured Block */
+}
+```
+
+### Constraints on Structured Blocks:
+- Must have a single point of entry and single point of exit.
+- Cannot jump into or out of the block with `goto`, `break`, or `return`.
+
+---
+
+## Data-Sharing Clauses: Private, Firstprivate, and Shared
+
+Variable scoping determines whether threads access shared global memory or allocate local private copies on their individual call stacks.
+
+### 1. `shared(var_list)`
+- All threads access the exact same memory location.
+- Reads and writes are directly visible to other threads.
+- Variables declared outside the parallel construct are **shared by default**.
+
+### 2. `private(var_list)`
+- Each thread allocates an **uninitialized** local copy of the variable on its private stack.
+- The original value outside the construct is NOT accessible inside.
+- The value of the variable after the parallel region is **undefined**.
+
+### 3. `firstprivate(var_list)`
+- Each thread allocates a private copy initialized with the value of the master thread's variable immediately before the construct was reached.
+- Modifying the variable inside the parallel region modifies only the thread's local copy; the master variable outside remains unchanged.
+
+---
+
+## The Lastprivate Clause
+
+Used in worksharing loop (`for`) and `sections` constructs:
+- Along with private behavior, copies the value from the thread that executed the **sequentially last iteration** of the loop back to the master thread variable after the construct completes.
+
+```c
+int final_val = 0;
+#pragma omp parallel for lastprivate(final_val)
+for (int i = 0; i < 100; i++) {
+    final_val = i * 2;
+}
+/* final_val is guaranteed to be 99 * 2 = 198 here! */
+```
+
+---
+
+## Best Practice: default(none)
+
+In production code and exam questions, always enforce `default(none)`:
+```c
+#pragma omp parallel default(none) shared(A, B) private(tid, local_sum)
+```
+- Disables default scoping rules.
+- The compiler will fail with a compilation error if any variable used inside the region does not have an explicit data-sharing attribute.
+- **Prevents subtle race conditions** caused by unintentional shared variable access.
+
+---
+
+## Runtime Control Clauses: num_threads and if
+
+### 1. `num_threads(integer-expression)`
+Overrides environment variables to dynamically specify the exact team size for this specific parallel construct:
+```c
+#pragma omp parallel num_threads(8)
+```
+
+### 2. `if(scalar-expression)`
+Evaluates a runtime condition. If false, the construct executes **serially** with 1 thread, avoiding thread creation overhead for small datasets:
+```c
+#pragma omp parallel for if(N > 1000) num_threads(4)
+for (int i = 0; i < N; i++) { ... }
+```
+
+---
+
+## Complete Scoping Verification Program
+
+```c
+#include <stdio.h>
+#include <omp.h>
+
+int main() {
+    int shared_var = 100;
+    int firstprivate_var = 50;
+    int private_var = 999;
+    int lastprivate_var = -1;
+
+    #pragma omp parallel num_threads(3) \
+        default(none) \
+        shared(shared_var) \
+        firstprivate(firstprivate_var) \
+        private(private_var)
+    {
+        int tid = omp_get_thread_num();
+
+        /* firstprivate starts at 50 for every thread */
+        firstprivate_var += tid;
+
+        /* private starts uninitialized; must assign before read */
+        private_var = tid * 10;
+
+        #pragma omp critical
+        {
+            printf("Thread %d: shared=%d, firstprivate=%d, private=%d\n",
+                   tid, shared_var, firstprivate_var, private_var);
+        }
+    }
+
+    printf("Master outside: shared=%d, firstprivate=%d, private=%d\n",
+           shared_var, firstprivate_var, private_var);
+
+    /* Verify lastprivate */
+    #pragma omp parallel for num_threads(4) lastprivate(lastprivate_var)
+    for (int i = 0; i < 8; i++) {
+        lastprivate_var = i * 10;
+    }
+    printf("After loop lastprivate_var (from iteration 7) = %d\n", lastprivate_var);
+
+    return 0;
+}
+```
+- **Compile:** `clang -fopenmp -O2 scoping_demo.c -o scoping_demo`
+- **Run:** `./scoping_demo`
+- **Expected Output:**
+```text
+Thread 0: shared=100, firstprivate=50, private=0
+Thread 1: shared=100, firstprivate=51, private=10
+Thread 2: shared=100, firstprivate=52, private=20
+Master outside: shared=100, firstprivate=50, private=999
+After loop lastprivate_var (from iteration 7) = 70
+```

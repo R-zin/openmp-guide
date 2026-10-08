@@ -1,0 +1,112 @@
+{
+  "id": "mock-openmp-exam",
+  "technology": "openmp",
+  "title": "MOCK LAB EXAM 2: OPEN MULTI-PROCESSING (OPENMP)",
+  "totalMarks": 50,
+  "durationMinutes": 90,
+  "instructions": [
+    "All code must be written in standard C conforming to OpenMP 4.5/5.x specifications.",
+    "Include <stdio.h>, <stdlib.h>, <omp.h>.",
+    "Compile with '-fopenmp -O2 -Wall'.",
+    "Verify thread count with OMP_NUM_THREADS (default 4 threads).",
+    "All shared variables must be protected against data races using reduction, atomic, or critical directives."
+  ],
+  "tasks": [
+    {
+      "id": "omp-task-1",
+      "title": "Task 1: Numerical Pi Estimation with Reduction and False-Sharing Protection",
+      "marks": 15,
+      "suggestedMinutes": 25,
+      "description": "Implement parallel numerical integration of 4.0 / (1.0 + x^2) from 0 to 1 with num_steps = 10,000,000. Write two versions: (a) An efficient version using '#pragma omp parallel for reduction(+:sum)', and (b) An analysis comparing performance against a naive array accumulator showing how false sharing occurs if threads write to adjacent array elements.",
+      "inputSpecification": "num_steps = 10000000.",
+      "outputSpecification": "Display computed Pi, absolute error compared to M_PI, and wall-clock execution time.",
+      "sampleOutput": "Computed Pi = 3.1415926536 (Error = 0.0000000000)\nExecution Time = 0.015200 seconds",
+      "rubric": [
+        {
+          "criterion": "Correct mathematical discretization and step width formulation",
+          "marks": 4
+        },
+        {
+          "criterion": "Correct use of reduction(+:sum) clause without data races",
+          "marks": 5
+        },
+        {
+          "criterion": "Wall-clock timing with omp_get_wtime and precision reporting",
+          "marks": 3
+        },
+        {
+          "criterion": "Code comments explaining false-sharing prevention mechanism",
+          "marks": 3
+        }
+      ],
+      "compileCommand": "clang -fopenmp -O2 task1_pi.c -o task1_pi",
+      "runCommand": "./task1_pi",
+      "referenceCode": "#include <stdio.h>\n#include <math.h>\n#include <omp.h>\n\nstatic long num_steps = 10000000;\n\nint main() {\n    double step = 1.0 / (double)num_steps;\n    double sum = 0.0;\n\n    double t0 = omp_get_wtime();\n\n    #pragma omp parallel for reduction(+:sum)\n    for (long i = 0; i < num_steps; i++) {\n        double x = (i + 0.5) * step;\n        sum += 4.0 / (1.0 + x * x);\n    }\n\n    double pi = step * sum;\n    double t1 = omp_get_wtime();\n\n    printf(\"Computed Pi = %.10f (Error = %.10f)\\n\", pi, fabs(pi - 3.141592653589793));\n    printf(\"Execution Time = %f seconds\\n\", t1 - t0);\n    return 0;\n}",
+      "explanation": "The reduction clause allocates private accumulators on each thread's stack. Register-level local accumulation completely eliminates cache line bouncing (false sharing)."
+    },
+    {
+      "id": "omp-task-2",
+      "title": "Task 2: Parallel Twin Primes Counter and Summation (PDC Lab 5)",
+      "marks": 15,
+      "suggestedMinutes": 30,
+      "description": "Write an OpenMP program to determine: (a) The number of twin prime pairs (consecutive odd integers that are both prime) less than 200, and (b) The sum of all integers comprising these twin prime pairs. You must explicitly identify where race conditions would occur without synchronization and resolve them using OpenMP reduction clauses.",
+      "inputSpecification": "Upper bound N = 200.",
+      "outputSpecification": "Prints total count of twin prime pairs and sum of all twin prime numbers.",
+      "sampleOutput": "Twin prime pairs < 200: 15\nSum of all twin primes < 200: 2472",
+      "rubric": [
+        {
+          "criterion": "Correct primality test helper function",
+          "marks": 4
+        },
+        {
+          "criterion": "Correct loop bounds examining pairs (p, p+2) for odd p < 200",
+          "marks": 4
+        },
+        {
+          "criterion": "Race condition identification and resolution via reduction clauses",
+          "marks": 5
+        },
+        {
+          "criterion": "Exact matching output with analytical verification",
+          "marks": 2
+        }
+      ],
+      "compileCommand": "clang -fopenmp -O2 task2_twin_primes.c -o task2_twin_primes",
+      "runCommand": "./task2_twin_primes",
+      "referenceCode": "#include <stdio.h>\n#include <omp.h>\n\nint is_prime(int n) {\n    if (n < 2) return 0;\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) return 0;\n    }\n    return 1;\n}\n\nint main() {\n    int count = 0;\n    int sum = 0;\n\n    // Parallel loop over all odd candidate pairs\n    #pragma omp parallel for schedule(dynamic) reduction(+:count) reduction(+:sum)\n    for (int p = 3; p < 198; p += 2) {\n        if (is_prime(p) && is_prime(p + 2)) {\n            count++;\n            sum += (p + (p + 2));\n        }\n    }\n\n    printf(\"Twin prime pairs < 200: %d\\n\", count);\n    printf(\"Sum of all twin primes < 200: %d\\n\", sum);\n    return 0;\n}",
+      "explanation": "If count and sum were shared without reduction, multiple threads finding twin primes simultaneously would execute unsynchronized read-modify-write cycles, dropping increments."
+    },
+    {
+      "id": "omp-task-3",
+      "title": "Task 3: Parallel Gaussian Elimination with Row Pivoting (PDC Lab 4)",
+      "marks": 20,
+      "suggestedMinutes": 35,
+      "description": "Write an OpenMP program in C to solve a system of linear equations Ax = b using Gaussian elimination with row elimination followed by backward substitution. Solve the test case from PDC Lab 4: N = 3 equations: [x - y + z = 4; x - 4y + 2z = 8; x + 2y + 8z = 12]. Expected exact solution: (x, y, z) = (5/3, -5/6, 3/2) \u2248 (1.67, -0.83, 1.50).",
+      "inputSpecification": "Augmented 3x4 matrix representation.",
+      "outputSpecification": "Print solution vector (x, y, z) and execution time.",
+      "sampleOutput": "Solution vector:\\nx = 1.666667 (5/3)\\ny = -0.833333 (-5/6)\\nz = 1.500000 (3/2)",
+      "rubric": [
+        {
+          "criterion": "Correct matrix data setup and augmented matrix initialization",
+          "marks": 3
+        },
+        {
+          "criterion": "Correct parallelization of row multiplier elimination with proper variable scoping",
+          "marks": 7
+        },
+        {
+          "criterion": "Correct backward substitution yielding exact fractions",
+          "marks": 6
+        },
+        {
+          "criterion": "Timing reporting and race condition analysis",
+          "marks": 4
+        }
+      ],
+      "compileCommand": "clang -fopenmp -O2 task3_gauss.c -o task3_gauss",
+      "runCommand": "./task3_gauss",
+      "referenceCode": "#include <stdio.h>\n#include <omp.h>\n\n#define N 3\n\nint main() {\n    // Augmented matrix [A | b]\n    double A[N][N + 1] = {\n        {1.0, -1.0, 1.0,  4.0},\n        {1.0, -4.0, 2.0,  8.0},\n        {1.0,  2.0, 8.0, 12.0}\n    };\n\n    double t0 = omp_get_wtime();\n\n    // Gaussian Elimination Phase\n    for (int k = 0; k < N - 1; k++) {\n        #pragma omp parallel for\n        for (int i = k + 1; i < N; i++) {\n            double factor = A[i][k] / A[k][k];\n            for (int j = k; j <= N; j++) {\n                A[i][j] -= factor * A[k][j];\n            }\n        }\n    }\n\n    // Backward Substitution Phase (Sequential)\n    double x[N];\n    for (int i = N - 1; i >= 0; i--) {\n        x[i] = A[i][N];\n        for (int j = i + 1; j < N; j++) {\n            x[i] -= A[i][j] * x[j];\n        }\n        x[i] = x[i] / A[i][i];\n    }\n\n    double t1 = omp_get_wtime();\n\n    printf(\"Solution vector:\\n\");\n    printf(\"x = %f (5/3 = %.6f)\\n\", x[0], 5.0 / 3.0);\n    printf(\"y = %f (-5/6 = %.6f)\\n\", x[1], -5.0 / 6.0);\n    printf(\"z = %f (3/2 = %.6f)\\n\", x[2], 3.0 / 2.0);\n    printf(\"Elapsed Time = %f seconds\\n\", t1 - t0);\n\n    return 0;\n}",
+      "explanation": "In row elimination, loop index i represents independent rows being eliminated below pivot row k. Each row i modifies only its own memory cells A[i][j], ensuring data race independence."
+    }
+  ]
+}

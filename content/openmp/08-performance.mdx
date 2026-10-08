@@ -1,0 +1,85 @@
+---
+id: omp-08-performance
+title: "OpenMP Performance, False Sharing & Scaling"
+slug: 08-performance
+technology: openmp
+order: 8
+description: Hardware cache hierarchy, false sharing detection and remedies, load balancing, scheduling overheads, speedup measurements, and Amdahl vs Gustafson laws.
+readingTimeMinutes: 16
+sections:
+  - id: false-sharing-deep
+    title: "Deep Dive: False Sharing in Multi-Core CPUs"
+    level: 2
+  - id: padding-and-privatization
+    title: Eliminating False Sharing via Cache Padding
+    level: 2
+  - id: overhead-breakdown
+    title: Parallel Overhead Breakdown
+    level: 2
+  - id: scaling-analysis
+    title: Strong Scaling vs Weak Scaling Analysis
+    level: 2
+---
+## Deep Dive: False Sharing in Multi-Core CPUs
+
+In modern symmetric multiprocessing (SMP) systems, CPU cores do not read individual 4-byte integers directly from main memory. They transfer memory in **Cache Lines** (typically $64$ bytes = 16 integers or 8 doubles).
+
+**False Sharing** occurs when two distinct threads running on separate CPU cores read and write to distinct variables that happen to share the **same 64-byte hardware cache line**:
+
+<Diagram type="false-sharing" caption="False Sharing: Writing to sum[0] on Core 0 invalidates the cache line holding sum[1] on Core 1." />
+
+### The Hardware Ping-Pong Cycle:
+1. Core 0 writes to `sum[0]`. The cache coherency protocol (MESI) marks Core 0's cache line as **Modified (M)**.
+2. Simultaneously, it broadcasts a bus invalidation signal to Core 1, transitioning Core 1's cache line to **Invalid (I)**.
+3. When Core 1 attempts to write to `sum[1]`, it experiences a cache miss. It must stall and fetch the line over the system bus.
+4. When Core 1 writes `sum[1]`, it invalidates Core 0's cache line!
+5. This continuous cache-line ping-pong destroys CPU memory throughput, causing multi-threaded code to run slower than serial code!
+
+---
+
+## Eliminating False Sharing via Cache Padding
+
+### Remedy 1: Structure Padding
+Add dummy padding bytes so that each thread's variable is aligned onto its own independent 64-byte cache line:
+
+```c
+#define CACHE_LINE_SIZE 64
+
+struct ThreadData {
+    int local_sum;
+    char pad[CACHE_LINE_SIZE - sizeof(int)]; /* 60 bytes of padding */
+};
+
+struct ThreadData sums[4];
+```
+
+### Remedy 2: Local Accumulation (Best Practice)
+Accumulate into a thread-private local variable allocated on the thread's call stack, and write to global memory only once at loop completion:
+
+```c
+#pragma omp parallel num_threads(4)
+{
+    int tid = omp_get_thread_num();
+    int my_local_sum = 0; /* Allocated on thread stack: ZERO false sharing */
+
+    #pragma omp for
+    for (int i = 0; i < N; i++) {
+        my_local_sum += compute(i);
+    }
+
+    #pragma omp atomic
+    global_sum += my_local_sum;
+}
+```
+
+---
+
+## Parallel Overhead Breakdown
+
+The total execution time of a parallel program $T_{\text{par}}$ comprises five distinct components:
+$$T_{\text{par}} = T_{\text{computation}} + T_{\text{thread\_mgmt}} + T_{\text{sync}} + T_{\text{imbalance}} + T_{\text{memory}}$$
+
+1. **Thread Management ($T_{\text{thread\_mgmt}}$):** Time to fork and join thread teams.
+2. **Synchronization Overhead ($T_{\text{sync}}$):** Atomic instructions, lock contention in critical sections, and barrier wait latency.
+3. **Load Imbalance ($T_{\text{imbalance}}$):** Idle time spent by fast threads waiting at barriers for slower threads.
+4. **Memory Contention ($T_{\text{memory}}$):** Bus saturation, NUMA remote memory penalties, and False Sharing cache misses.
