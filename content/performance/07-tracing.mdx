@@ -1,0 +1,69 @@
+---
+id: 07-tracing
+slug: 07-tracing
+technology: performance
+order: 7
+title: "Tracing: Event Logs, OTF2 Format, and Timeline Analysis"
+description: "Chronological performance tracing, Open Trace Format 2 (OTF2), Gantt timeline visualizations, and data volume challenges."
+readingTimeMinutes: 14
+sections:
+  - id: what-is-tracing
+    title: "Definition of Tracing"
+    level: 2
+  - id: what-tracing-reveals
+    title: "What Tracing Reveals That Profiling Misses"
+    level: 2
+  - id: otf2-format
+    title: "The Open Trace Format 2 (OTF2)"
+    level: 2
+  - id: timeline-visualization
+    title: "Timeline Visualizations (Vampir, Paraver)"
+    level: 2
+  - id: tracing-drawbacks
+    title: "The Data Volume Drawback and Trace Filtering"
+    level: 2
+---
+
+## Definition of Tracing
+
+**Tracing** is a performance measurement technique that preserves the **exact chronological sequence of timestamped events** across all processes and threads throughout the entire duration of an application run:
+- Whenever an event occurs (e.g., entering a function, sending an MPI message, waiting at a lock), an event record is written into a memory buffer.
+- When the run completes, these event streams are consolidated into a coordinated multi-process trace file.
+- The output represents an exact historical recording of the execution timeline.
+
+<Diagram type="timeline-tracing" caption="Multi-rank OTF2 trace timeline showing Rank 0 compute, message send, and Rank 1 idle wait state." />
+
+## What Tracing Reveals That Profiling Misses
+
+While profiling summarizes totals, tracing reveals the **causal dynamics over time**:
+1. **Temporal Load Imbalance**: Profiling shows that rank 0 spent 50% time computing and rank 1 spent 50% time computing. Tracing reveals that during the first 10 minutes rank 0 did 90% of the work while rank 1 sat idle, and then the reverse occurred!
+2. **Idle Wait States & Message Latencies**: Tracing displays the physical flight time of individual messages across the network.
+3. **Causal Chain Attribution**: When a thread stalls at a barrier, tracing points directly to the late thread that caused the stall.
+4. **Transient Performance Spikes**: Tracing isolates brief micro-bursts of network congestion or memory thrashing that get averaged out and hidden in a flat profile.
+
+## The Open Trace Format 2 (OTF2)
+
+In high-performance computing, the standard open format for trace files is **OTF2 (Open Trace Format 2)**:
+- Developed jointly by TU Dresden, Jülich Supercomputing Centre, and the University of Oregon.
+- **Scalable Architecture**: Each rank and thread writes to its own independent binary event stream into thread-local RAM buffers during execution, eliminating inter-process disk contention.
+- Uses compact binary encoding and delta-timestamp compression to minimize disk footprint.
+- Supported universally by Score-P, Scalasca, and Vampir.
+
+## Timeline Visualizations (Vampir, Paraver)
+
+Specialized GUI trace visualizers render OTF2 traces as interactive **Gantt timeline charts**:
+- **Horizontal Axis**: Exact continuous wall-clock time (zoomable from seconds down to nanoseconds).
+- **Vertical Axis**: Parallel processes and threads organized hierarchically.
+- **Color Coding**: Function execution states (e.g. green for computation, red for MPI communication, yellow for idle wait).
+- **Message Arrows**: Explicit directed lines drawn between ranks representing point-to-point transfers (`MPI_Send` $\to$ `MPI_Recv`).
+
+## The Data Volume Drawback and Trace Filtering
+
+The paramount disadvantage of tracing is its **explosive data volume**:
+- A program running 10,000 ranks for 1 hour can easily generate **terabytes** or petabytes of trace data if every minor function call is logged!
+- Writing massive trace logs to disk can overwhelm parallel file systems (Lustre, GPFS) and distort application runtime (severe Heisenberg probe effect).
+
+### Mitigation Strategies
+1. **Trace Buffering**: Events are stored in thread-local RAM buffers and written to disk in bulk blocks only at natural program boundaries.
+2. **Selective Filtering**: Developers configure a `scorep.filt` filter file before running, suppressing tracing on small, high-frequency utility routines.
+3. **Phase-Specific Tracing**: Tracing is programmatically turned ON only during the core simulation loop (e.g. iteration 10 to 12) using `SCOREP_RECORDING_ON()` and `SCOREP_RECORDING_OFF()`.

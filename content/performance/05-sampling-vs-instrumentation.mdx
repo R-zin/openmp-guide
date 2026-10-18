@@ -1,0 +1,80 @@
+---
+id: 05-sampling-vs-instrumentation
+slug: 05-sampling-vs-instrumentation
+technology: performance
+order: 5
+title: "Sampling vs. Instrumentation Measurement Techniques"
+description: "Comparing statistical sampling (perf, gprof) against source/binary instrumentation (Score-P, TAU), probe overhead, and accuracy."
+readingTimeMinutes: 14
+sections:
+  - id: measurement-paradigms
+    title: "Two Paradigms of Performance Data Collection"
+    level: 2
+  - id: statistical-sampling
+    title: "1. Statistical Sampling (PC Sampling)"
+    level: 2
+  - id: instrumentation
+    title: "2. Software Instrumentation (Probe Probing)"
+    level: 2
+  - id: instrumentation-levels
+    title: "Levels of Instrumentation (Source, Compiler, Library, Binary)"
+    level: 2
+  - id: heisenberg-effect
+    title: "Measurement Overhead and the Probe Effect (Heisenberg)"
+    level: 2
+  - id: comparison-table
+    title: "Sampling vs. Instrumentation Comparison Table"
+    level: 2
+---
+
+## Two Paradigms of Performance Data Collection
+
+To extract performance data from a running parallel application, measurement frameworks deploy two fundamentally distinct methodologies:
+1. **Statistical Sampling** (Periodic Probing)
+2. **Software Instrumentation** (Explicit Probes)
+
+<Diagram type="sampling-vs-instrumentation" caption="Statistical sampling (periodic timer ticks) vs software instrumentation (entry/exit probe hooks)." />
+
+## 1. Statistical Sampling (PC Sampling)
+
+**Sampling** measures an unmodified executable by periodically interrupting execution using asynchronous timer interrupts or hardware counter overflow signals:
+- **Operating Mechanism**: An OS timer or hardware performance monitoring unit (PMU) triggers an interrupt every $X$ milliseconds or every $N$ instructions.
+- The signal handler inspects the CPU's **Program Counter (PC)** and call stack register, recording which function was currently active.
+- Over time, functions that spend more execution time will accumulate a proportionally larger count of sample ticks.
+- *Examples*: Linux `perf`, `gprof`, Intel VTune Profiler.
+- *Advantages*: Extremely low overhead ($1\% - 3\%$), completely non-invasive, requires no source code modification or special recompilation.
+- *Disadvantages*: Misses brief, infrequent performance spikes; does not record exact function call counts or message transfer parameters.
+
+## 2. Software Instrumentation (Probe Probing)
+
+**Instrumentation** modifies the program binary or source code by inserting explicit measurement hooks (**probes**) at the exact boundaries of functions and communication routines:
+- **Operating Mechanism**: Whenever execution hits a probe, the measurement library records a timestamped enter or exit event.
+- *Examples*: **Score-P**, **TAU**, Scalasca.
+- *Advantages*: Provides **100% exact call counts**, exact execution times for every function invocation, and captures exact MPI message tags, sizes, and ranks.
+- *Disadvantages*: Incurs measurable measurement overhead; can distort application timing.
+
+## Levels of Instrumentation
+
+1. **Source Code Instrumentation**: A preprocessor parses the C/C++ source code and inserts API calls (e.g. `SCOREP_USER_REGION_ENTER()`).
+2. **Compiler-Assisted Instrumentation**: The compiler automatically inserts probe hooks at function entry and exit points (e.g. GCC's `-finstrument-functions`).
+3. **Wrapper / Library Interposition**: Intercepting shared library function calls using `LD_PRELOAD` or the standard MPI **PMPI** interface without recompiling user code.
+4. **Binary Rewriting**: Directly inserting probe instructions into compiled machine-code binaries (e.g. Dyninst).
+
+## Measurement Overhead and the Probe Effect (Heisenberg)
+
+Every instrumentation probe consumes CPU cycles (reading clock timers, updating data structures):
+- If a tiny helper function (e.g., a 2-line inline vector getter called 100 million times in a tight loop) is instrumented, the probe overhead can dwarf the function itself, causing a 500% execution slowdown!
+- **The Probe Effect (Heisenberg Effect)**: The very act of observing and measuring the system perturbs its execution timing. An artificial delay introduced on one rank can mask or induce false race conditions and alter communication interleavings.
+- **Remedy**: Performance engineers use **Score-P filter files** to suppress instrumentation on lightweight, high-frequency functions.
+
+## Sampling vs. Instrumentation Comparison Table
+
+| Feature | Statistical Sampling | Software Instrumentation |
+| :--- | :--- | :--- |
+| **Typical Tools** | Linux `perf`, `gprof`, Intel VTune | **Score-P**, **TAU**, Scalasca |
+| **Source Recompilation** | Not required (operates on standard binary) | Required (or dynamic binary rewriting) |
+| **Runtime Overhead** | Minimal ($1\% - 3\%$) | Variable ($2\% - 20\%+$ if unfiltered) |
+| **Call Count Accuracy** | Statistical estimate (approximate) | **Exact call counts** |
+| **Short Function Capture** | Misses functions executed between ticks | Captures every single invocation |
+| **MPI Parameter Capture** | None | Captures message bytes, tags, communicators |
+| **Primary Use Case** | Initial broad hotspot discovery | Deep profiling, tracing, and root-cause analysis |

@@ -1,0 +1,84 @@
+---
+id: 01-introduction
+slug: 01-introduction
+technology: networks
+order: 1
+title: "Introduction to Interconnection Networks"
+description: "Classification of static and dynamic networks, switches, links, and network interfaces."
+readingTimeMinutes: 12
+sections:
+  - id: why-networks
+    title: "Why Interconnection Networks Matter"
+    level: 2
+  - id: static-vs-dynamic
+    title: "Static vs. Dynamic Networks"
+    level: 2
+  - id: switches-and-degree
+    title: "Switches, Degree, and Switch Complexity"
+    level: 2
+  - id: links-and-interfaces
+    title: "Communication Links and Network Interfaces"
+    level: 2
+  - id: watch-out-switches
+    title: "Watch Out: Switch Port Quadratic Cost"
+    level: 2
+---
+
+## Why Interconnection Networks Matter
+
+In modern parallel computing architectures, the performance of multi-core processors, distributed-memory clusters, and supercomputers is fundamentally bounded not merely by raw arithmetic computation speed, but by the speed and bandwidth at which data moves across the system. 
+
+An **interconnection network** is the physical and logical communication fabric that carries messages, control signals, and raw data between processing elements (CPUs, GPUs, vector accelerators) and memory modules.
+
+Parallel architectures trade off **performance** (low latency, high bisection bandwidth, high throughput) against **cost** (number of wires, physical links, switch complexity, and packaging area).
+
+## Static vs. Dynamic Networks
+
+Interconnection networks fall into two foundational architectural classes:
+
+1. **Static (Direct) Networks**:
+   - Consist of point-to-point physical communication links establishing permanent connections directly between processing nodes.
+   - Nodes act as both computing units and message routers.
+   - Topologies are fixed: nodes only communicate directly with immediate physical neighbors; all other communication requires multi-hop store-and-forward or wormhole routing through intermediate nodes.
+   - Examples: Linear Array, Ring, 2-D/3-D Mesh, 2-D Torus, Hypercube, Tree networks.
+
+2. **Dynamic (Indirect) Networks**:
+   - Processors and memory banks connect to an active switching fabric composed of programmable switching elements.
+   - Communication pathways are established dynamically on demand by configuring the internal state of the switches.
+   - Intermediate elements are dedicated switches rather than computing processors.
+   - Examples: Crossbar switches, Multistage Interconnection Networks (MINs) such as Omega networks, Butterfly networks, and dynamic Fat Trees.
+
+| Architectural Feature | Static (Direct) Networks | Dynamic (Indirect) Networks |
+| :--- | :--- | :--- |
+| **Node Role** | Processors perform both compute & routing | Processors compute; switches route |
+| **Connection Type** | Fixed point-to-point wiring | Reconfigurable switching paths |
+| **Scalability** | High for meshes and hypercubes | Limited for crossbars ($O(p^2)$ switches) |
+| **Typical Deployment** | Multicomputers, Beowulf clusters, MPPs | Shared-memory SMPs, switch fabrics |
+
+<Diagram type="memory-architecture" caption="Direct point-to-point node cluster vs shared-bus switching network." />
+
+## Switches, Degree, and Switch Complexity
+
+A network **switch** is a hardware routing device that maps a set of input ports to a set of output ports:
+- The total number of input and output ports on a switch is defined as the **degree of the switch** ($d_{sw}$).
+- Internal switch architecture requires internal switching logic (crosspoints). The internal hardware complexity and physical silicon area of a crossbar switch grow as the **square of the switch degree**:
+
+$$
+\text{Switch Internal Cost} = O(d_{sw}^2)
+$$
+
+Hence, constructing switches with very high degree (e.g., $d_{sw} > 64$) becomes physically and thermally prohibitive on a single silicon die. This fundamental physical limit necessitates multi-stage switching fabrics or bounded-degree topologies (such as 2-D meshes with switch degree 4 or 3-D meshes with degree 6).
+
+## Communication Links and Network Interfaces
+
+Processors communicate with the interconnection network through a dedicated **Network Interface Card (NIC)** or on-chip network interface unit:
+- **I/O Bus Attached Interface**: The NIC sits on a standard peripheral bus (e.g., PCIe). Data transfers incur bus protocol conversion delays and higher OS kernel latency. Common in commodity clusters.
+- **Memory Bus Attached Interface**: The network controller connects directly to the high-speed processor-memory bus or is integrated on-die (e.g., Cray Gemini, Intel Omni-Path, Fugaku Tofu). Bypasses peripheral bottlenecks, delivering sub-microsecond latency.
+
+Communication channels can be unidirectional or bidirectional full-duplex links. Link capacity is characterized by:
+- **Link Bandwidth ($b$)**: The maximum rate at which raw bits can be transmitted over the physical medium (measured in Gbps or GB/s).
+- **Channel Latency ($t_{link}$)**: Time required for a bit to travel the physical wire between two endpoints.
+
+<Callout type="warning" title="Watch Out: Switch Port Quadratic Cost">
+When analyzing network topologies, beware of assuming switches are zero-cost. While a completely connected network offers a diameter of 1 hop, every single node requires a switch of degree $p-1$. Across $p$ nodes, the aggregate switch crosspoint complexity scales as $O(p^2)$, rendering direct crossbars unbuildable for $p > 1024$ nodes.
+</Callout>

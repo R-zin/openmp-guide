@@ -7,8 +7,8 @@ This document logs the automated sandbox compilation and execution verification 
 - **MPI Compiler & Runtime:** OpenMPI 5.x (`/opt/homebrew/bin/mpicc`, `/opt/homebrew/bin/mpirun`)
 - **OpenMP Compiler:** Homebrew LLVM/Clang with OpenMP support (`/opt/homebrew/opt/llvm/bin/clang -fopenmp`)
 - **Architecture:** Apple Silicon (macOS Darwin arm64)
-- **Total Programs Tested:** 52
-- **Programs Passing:** 52
+- **Total Programs Tested:** 53
+- **Programs Passing:** 53
 - **Programs Failing:** 0
 
 ## Summary Table
@@ -67,6 +67,7 @@ This document logs the automated sandbox compilation and execution verification 
 | `omp_omp-wp-08` | OpenMP Question (write-the-program) | Program: Gaussian Elimination Row Elimination (Lab 4 Task 1) | OPENMP | **PASS** |
 | `omp_omp-wp-09` | OpenMP Question (write-the-program) | Program: OpenMP Locks for Thread-Safe Bank Account | OPENMP | **PASS** |
 | `omp_omp-wp-10` | OpenMP Question (write-the-program) | Program: Default(None) Scoping Compliance | OPENMP | **PASS** |
+| `vector_add` | Topic Tutorial | Vector Addition with OpenMP SIMD & 64-byte Alignment | VECTORS | **PASS** |
 
 ## Detailed Execution Logs
 
@@ -98,7 +99,7 @@ Ring complete! Final token at Rank 0 = 56
 **Observed Output:**
 ```text
 Root Rank 3 (MAX rank) Result: Estimated = 10.000000 (Exact = 10.000000)
-Execution Time = 0.001418 seconds
+Execution Time = 0.001688 seconds
 ```
 
 ---
@@ -128,7 +129,7 @@ Sorted Array:  -118 -14 0 1 7 10 15 23 25 29 34 45 100 178 192 246
 **Observed Output:**
 ```text
 Computed Pi = 3.1415926536 (Error = 0.0000000000)
-Execution Time = 0.007754 seconds
+Execution Time = 0.004460 seconds
 ```
 
 ---
@@ -161,7 +162,7 @@ Solution vector:
 x = 1.666667 (5/3 = 1.666667)
 y = -0.833333 (-5/6 = -0.833333)
 z = 1.500000 (3/2 = 1.500000)
-Elapsed Time = 0.000159 seconds
+Elapsed Time = 0.000198 seconds
 ```
 
 ---
@@ -176,9 +177,9 @@ Elapsed Time = 0.000159 seconds
 **Observed Output:**
 ```text
 Greetings from process rank 1 of 4!
-Greetings from process rank 3 of 4!
-Greetings from process rank 2 of 4!
 Greetings from process rank 0 of 4!
+Greetings from process rank 2 of 4!
+Greetings from process rank 3 of 4!
 ```
 
 ---
@@ -358,10 +359,10 @@ y[3] = 170.0
 
 **Observed Output:**
 ```text
-Process (1, 0) [Rank 2] Result C = 21.0
-Process (0, 1) [Rank 1] Result C = 12.0
 Process (0, 0) [Rank 0] Result C = 11.0
+Process (0, 1) [Rank 1] Result C = 12.0
 Process (1, 1) [Rank 3] Result C = 22.0
+Process (1, 0) [Rank 2] Result C = 21.0
 ```
 
 ---
@@ -377,7 +378,7 @@ Process (1, 1) [Rank 3] Result C = 22.0
 ```text
 Parallel BFS Traversal Order (Starting from 0):
 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
-Execution Time = 0.005154 seconds
+Execution Time = 0.004139 seconds
 ```
 
 ---
@@ -392,9 +393,9 @@ Execution Time = 0.005154 seconds
 **Observed Output:**
 ```text
 Max available threads: 4
+Hello from OpenMP thread 3 of 4
 Hello from OpenMP thread 0 of 4
 Hello from OpenMP thread 2 of 4
-Hello from OpenMP thread 3 of 4
 Hello from OpenMP thread 1 of 4
 Back in sequential master thread execution
 ```
@@ -410,8 +411,8 @@ Back in sequential master thread execution
 
 **Observed Output:**
 ```text
-Thread 2: shared=100, firstprivate=52, private=20
 Thread 0: shared=100, firstprivate=50, private=0
+Thread 2: shared=100, firstprivate=52, private=20
 Thread 1: shared=100, firstprivate=51, private=10
 Master outside: shared=100, firstprivate=50, private=999
 After loop lastprivate_var (from iteration 7) = 70
@@ -428,22 +429,22 @@ After loop lastprivate_var (from iteration 7) = 70
 
 **Observed Output:**
 ```text
-Thread 3 executed iteration 6
-Thread 3 executed iteration 7
-Thread 3 executed iteration 14
 Thread 0 executed iteration 0
 Thread 0 executed iteration 1
 Thread 0 executed iteration 8
 Thread 0 executed iteration 9
+Thread 3 executed iteration 6
+Thread 3 executed iteration 7
+Thread 1 executed iteration 2
+Thread 1 executed iteration 3
+Thread 1 executed iteration 10
+Thread 1 executed iteration 11
+Thread 3 executed iteration 14
 Thread 3 executed iteration 15
 Thread 2 executed iteration 4
 Thread 2 executed iteration 5
 Thread 2 executed iteration 12
 Thread 2 executed iteration 13
-Thread 1 executed iteration 2
-Thread 1 executed iteration 3
-Thread 1 executed iteration 10
-Thread 1 executed iteration 11
 All 16 iterations completed by team!
 ```
 
@@ -475,7 +476,7 @@ Reduction Count (Optimal): 100000
 
 **Observed Output:**
 ```text
-Computed Pi = 3.1415926536 (Elapsed Time = 0.001125 s)
+Computed Pi = 3.1415926536 (Elapsed Time = 0.000563 s)
 ```
 
 ---
@@ -508,8 +509,8 @@ Physical CPU Cores Detected: 8
 Default Max Threads: 4
 Timer Tick Resolution: 0.000001000 seconds
 Parallel Region Active! Team Size: 4
-Thread 0 executing on core
 Thread 3 executing on core
+Thread 0 executing on core
 Thread 2 executing on core
 Thread 1 executing on core
 ```
@@ -539,7 +540,7 @@ Fibonacci(30) = 832040
 
 **Observed Output:**
 ```text
-Vector addition completed in 0.001148 seconds (Z[0] = 3.0)
+Vector addition completed in 0.001018 seconds (Z[0] = 3.0)
 ```
 
 ---
@@ -553,7 +554,7 @@ Vector addition completed in 0.001148 seconds (Z[0] = 3.0)
 
 **Observed Output:**
 ```text
-Matrix mult (256x256) completed in 0.011443 seconds (C[0][0] = 512.0)
+Matrix mult (256x256) completed in 0.008670 seconds (C[0][0] = 512.0)
 ```
 
 ---
@@ -627,24 +628,24 @@ Process 3 of 4 reporting
 **Observed Output:**
 ```text
 Rank 0 sent ping_pong_count 1 to Rank 1
+Rank 0 received ping_pong_count 2 from Rank 1
+Rank 0 sent ping_pong_count 3 to Rank 1
 Rank 1 received ping_pong_count 1 from Rank 0
 Rank 1 sent ping_pong_count 2 to Rank 0
 Rank 1 received ping_pong_count 3 from Rank 0
 Rank 1 sent ping_pong_count 4 to Rank 0
 Rank 1 received ping_pong_count 5 from Rank 0
-Rank 0 received ping_pong_count 2 from Rank 1
-Rank 0 sent ping_pong_count 3 to Rank 1
+Rank 1 sent ping_pong_count 6 to Rank 0
+Rank 1 received ping_pong_count 7 from Rank 0
+Rank 1 sent ping_pong_count 8 to Rank 0
 Rank 0 received ping_pong_count 4 from Rank 1
 Rank 0 sent ping_pong_count 5 to Rank 1
 Rank 0 received ping_pong_count 6 from Rank 1
-Rank 1 sent ping_pong_count 6 to Rank 0
-Rank 1 received ping_pong_count 7 from Rank 0
 Rank 0 sent ping_pong_count 7 to Rank 1
 Rank 0 received ping_pong_count 8 from Rank 1
-Rank 1 sent ping_pong_count 8 to Rank 0
-Rank 1 received ping_pong_count 9 from Rank 0
 Rank 0 sent ping_pong_count 9 to Rank 1
 Rank 0 received ping_pong_count 10 from Rank 1
+Rank 1 received ping_pong_count 9 from Rank 0
 Rank 1 sent ping_pong_count 10 to Rank 0
 ```
 
@@ -753,10 +754,10 @@ BFS Level 2 discovered vertices: 2
 
 **Observed Output:**
 ```text
-IIIT-Kottayam Process Rank: 1 of 4
-IIIT-Kottayam Process Rank: 3 of 4
 IIIT-Kottayam Process Rank: 2 of 4
 IIIT-Kottayam Process Rank: 0 of 4
+IIIT-Kottayam Process Rank: 1 of 4
+IIIT-Kottayam Process Rank: 3 of 4
 ```
 
 ---
@@ -785,7 +786,7 @@ Rank 0 received 100 from partner 1
 
 **Observed Output:**
 ```text
-Computed Pi = 3.1415926536 (Time = 0.000178 s)
+Computed Pi = 3.1415926536 (Time = 0.000294 s)
 ```
 
 ---
@@ -928,4 +929,83 @@ B[4] = 50
 ```
 
 ---
+
+### `vector_add`: Vector Addition with OpenMP SIMD & 64-byte Alignment
+
+- **Category:** Topic Tutorial (Vectors)
+- **Status:** `SUCCESS`
+- **Compile Command:** `/opt/homebrew/opt/llvm/bin/clang -fopenmp -O3 sandbox/vector_add.c -o sandbox/vector_add_omp.out`
+- **Run Command:** `sandbox/vector_add_omp.out`
+
+**Observed Output:**
+```text
+Vector Add completed: SUCCESS (c[0] = 3.0, c[N-1] = 3.0)
+```
+
+---
+
+## Mathematical Formula Verification Suite
+
+In addition to compiled C code execution, all numerical examples and graph-theoretic formulas from the syllabus lecture slides are validated via the automated Python test suite `scripts/verify_formulas.py`.
+
+### 1. Interconnection Network Graph Metrics
+- **3-ary 3-cube ($k=3, d=3$):**
+  - Processors $p = 3^3 = 27$
+  - Switch degree $d = 2d = 6$
+  - Diameter $D = d \cdot \lfloor k/2 \rfloor = 3 \cdot 1 = 3$
+  - Bisection width $B_w = 2 \cdot k^{d-1} = 2 \cdot 9 = 18$
+  - Channel links $|C| = d \cdot p = 3 \cdot 27 = 81$
+  - *Status:* **PASS (All exact matches)**
+- **8x8 2D Mesh without wraparound:**
+  - Nodes $p = 64$
+  - Diameter $D = 2(\sqrt{p}-1) = 2(7) = 14$
+  - Bisection width $B_w = \sqrt{p} = 8$
+  - Links $|C| = 2(p - \sqrt{p}) = 2(64 - 8) = 112$
+  - Degree distribution: 4 corners (deg 2), 24 edges (deg 3), 36 interior (deg 4). Sum of degrees = $4(2) + 24(3) + 36(4) = 8 + 72 + 144 = 224 = 2 \times 112$ (Handshaking lemma verified).
+  - *Status:* **PASS**
+- **1024-node Hypercube ($d=10$):**
+  - Processors $p = 2^{10} = 1024$
+  - Diameter $D = 10$, Degree $d = 10$
+  - Bisection width $B_w = p/2 = 512$
+  - Links $|C| = (p \log_2 p)/2 = (1024 \times 10)/2 = 5120$
+  - *Status:* **PASS**
+
+### 2. E-Cube Hypercube XOR Routing
+- **Slide Example ($010 \to 111$ in 3-cube):**
+  - $010 \oplus 111 = 101_2$ (bits 0 and 2 differ).
+  - LSB-first path: $010 \to 011 \to 111$ (2 hops = Hamming distance).
+  - *Status:* **PASS**
+- **Practice Example ($0110 \to 1011$ in 4-cube):**
+  - $0110 \oplus 1011 = 1101_2$ (bits 3, 2, 0 differ).
+  - Dimension order path: $0110 \to 1110 \to 1010 \to 1011$ (3 hops = Hamming distance).
+  - *Status:* **PASS**
+
+### 3. Gray Code Embeddings
+- **Recursive Generation:** Generates valid $n$-bit binary reflected Gray code with strict 1-bit difference across all adjacent steps.
+- **Ring into Hypercube:** $N$-node ring mapped along Gray code yields dilation = 1, congestion = 1, expansion = 1.
+- **4x4 Mesh into 4-D Hypercube:** Coordinate $(1, 1)$ mapped to $\text{Gray}(1) \parallel \text{Gray}(1) = 0101_2$. All 4-neighbor distances equal 1 bit (dilation = 1).
+- *Status:* **PASS**
+
+### 4. Pipelining Speedup & Cycle Calculation
+- **3-segment pipeline ($A_i \cdot B_i + C_i$):**
+  - $k=3$ segments, $n=7$ tasks: pipelined cycles $= k + n - 1 = 9$ clock cycles.
+  - Non-pipelined cycles $= n \times k = 21$ cycles.
+  - Speedup $S = 21 / 9 \approx 2.33\times$.
+  - *Status:* **PASS**
+- **4-segment pipeline for 6 tasks:** $k+n-1 = 4 + 6 - 1 = 9$ cycles.
+  - *Status:* **PASS**
+
+### 5. Scaling Laws & Efficiency Metrics
+- **Amdahl's Law:** Serial fraction $s=0.1$ asymptotic limit $= 1/s = 10\times$. For $p=64$, speedup $= 8.77\times$.
+- **Gustafson's Law:** $s=0.1, p=64 \implies S = 64 - 0.1(63) = 57.7\times$.
+- **Karp-Flatt Metric:** $p=8, S=4.0 \implies e = (1/4 - 1/8) / (7/8) = 1/7 \approx 0.1429$ (14.3% serial overhead).
+- **Energy-Delay Product (EDP):** System A (100W, 10s $\implies$ 10,000 J$\cdot$s) vs System B (150W, 7s $\implies$ 7,350 J$\cdot$s) proves 26.5% superior EDP efficiency for System B.
+- *Status:* **PASS**
+
+### 6. Cannon's Matrix Multiplication
+- Partitioning $1024 \times 1024$ on $4 \times 4$ processor grid: local sub-block $256 \times 256$ ($65,536$ elements).
+- Initial alignment: Row $i$ shifted left by $i$, Column $j$ shifted up by $j$.
+- Shift phases: $\sqrt{p} = 4$ iterations of block multiply and single circular shift.
+- *Status:* **PASS**
+
 

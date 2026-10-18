@@ -1,0 +1,137 @@
+---
+id: 06-mapping-and-embedding
+slug: 06-mapping-and-embedding
+technology: networks
+order: 6
+title: "Graph Mapping and Embedding into Hypercubes"
+description: "Dilation, Congestion, Expansion, Binary Reflected Gray Codes, and embedding Rings and Meshes into Hypercubes."
+readingTimeMinutes: 16
+sections:
+  - id: embedding-metrics
+    title: "Embedding Metrics: Dilation, Congestion, Expansion"
+    level: 2
+  - id: gray-code
+    title: "Binary Reflected Gray Code (RGC)"
+    level: 2
+  - id: embedding-ring
+    title: "Embedding a Linear Array or Ring into a Hypercube"
+    level: 2
+  - id: embedding-mesh
+    title: "Embedding a 2-D Mesh into a Hypercube"
+    level: 2
+  - id: why-mesh-cannot-map-linear
+    title: "Why a Mesh Cannot Map to a Linear Array Without Congestion"
+    level: 2
+  - id: interactive-visualizer
+    title: "Interactive Gray Code Visualizer"
+    level: 2
+---
+
+## Embedding Metrics: Dilation, Congestion, Expansion
+
+In parallel computing, algorithms are designed around natural logical communication graphs $G = (V, E)$ (called the **guest graph**, e.g., a 2D grid for PDEs). To execute this algorithm on a target parallel machine $G' = (V', E')$ (called the **host graph**, e.g., a hypercube), we must **embed** $G$ into $G'$:
+- Mapping function $\phi: V \to V'$ maps guest processes to host processors.
+- Mapping function $\psi: E \to \text{paths in } G'$ maps guest communication edges to physical paths in the host network.
+
+Three formal metrics quantify the efficiency of the embedding:
+
+1. **Dilation**: The maximum length of any path in the host graph $G'$ that corresponds to a single communication edge in the guest graph $G$:
+   $$
+   \text{Dilation} = \max_{(u, v) \in E} \text{length}(\psi(u, v))
+   $$
+   *Impact*: Dilation bounds the transmission delay of neighboring process communication.
+
+2. **Congestion**: The maximum number of guest edges that are routed over any single physical link in the host graph $G'$:
+   $$
+   \text{Congestion} = \max_{e' \in E'} |\{ e \in E \mid e' \in \psi(e) \}|
+   $$
+   *Impact*: Congestion causes link contention and slows down simultaneous transfers.
+
+3. **Expansion**: The ratio of the number of nodes in the host graph to the number of nodes in the guest graph:
+   $$
+   \text{Expansion} = \frac{|V'|}{|V|}
+   $$
+   *Impact*: Measures processor utilization. If Expansion $= 1$, no processing nodes are wasted.
+
+**Ideal Embedding**: Dilation $= 1$, Congestion $= 1$, Expansion $= 1$. In this case, the guest graph is a **subgraph** of the host graph ($G \subseteq G'$).
+
+## Binary Reflected Gray Code (RGC)
+
+A Gray code is a binary numeral system where two successive values differ in **strictly one bit**. The **Binary Reflected Gray Code (RGC)** of $d$ bits is defined recursively:
+- Base case ($1$ bit):
+  $$
+  G_1 = \{0, 1\}
+  $$
+- Recursive step: To construct $G_{x+1}$, take $G_x$, append $0$ as a prefix to each code, then reflect (reverse) the list $G_x$ and append $1$ as a prefix:
+  $$
+  G(i, x+1) = \begin{cases} 0 \parallel G(i, x) & \text{if } i < 2^x \\ 1 \parallel G(2^{x+1} - 1 - i, x) & \text{if } i \ge 2^x \end{cases}
+  $$
+
+### 3-Bit Reflected Gray Code Master Table
+| Ring / Array Index $i$ | Binary Value | 3-Bit Gray Code $G(i, 3)$ | Hamming Dist to $i+1$ |
+| :---: | :---: | :---: | :---: |
+| **0** | 000 | **000** | 1 (differs in bit 0) |
+| **1** | 001 | **001** | 1 (differs in bit 1) |
+| **2** | 010 | **011** | 1 (differs in bit 0) |
+| **3** | 011 | **010** | 1 (differs in bit 2) |
+| **4** | 100 | **110** | 1 (differs in bit 0) |
+| **5** | 101 | **111** | 1 (differs in bit 1) |
+| **6** | 110 | **101** | 1 (differs in bit 0) |
+| **7** | 111 | **100** | 1 (differs in bit 2 to node 0) |
+
+Notice that the wraparound between index 7 (`100`) and index 0 (`000`) differs in only bit 2, so the Gray code forms a **closed Hamiltonian cycle**!
+
+<Diagram type="gray-code-embedding" caption="Embedding an 8-node ring into a 3-D hypercube using 3-bit Gray code." />
+
+## Embedding a Linear Array or Ring into a Hypercube
+
+To embed a ring of $p = 2^d$ nodes into a $d$-dimensional hypercube:
+- Map node $i$ of the ring to hypercube node $G(i, d)$.
+- Because $G(i, d)$ and $G(i+1, d)$ differ by exactly 1 bit, they are immediate adjacent neighbors in the hypercube.
+- **Results**: Dilation $= 1$, Congestion $= 1$, Expansion $= 1$.
+- Thus, any linear array or ring of $2^d$ nodes is a **direct subgraph** of a $d$-dimensional hypercube.
+
+## Embedding a 2-D Mesh into a Hypercube
+
+A $2^r \times 2^s$ wraparound mesh ($p = 2^{r+s}$ nodes) can be embedded into a $(r+s)$-dimensional hypercube:
+- A mesh node at coordinate $(i, j)$ has row index $0 \le i < 2^r$ and column index $0 \le j < 2^s$.
+- **Mapping Function**: Concatenate the $r$-bit Gray code of $i$ with the $s$-bit Gray code of $j$:
+  $$
+  \phi(i, j) = G(i, r) \parallel G(j, s)
+  $$
+
+### Worked Example: $4 \times 4$ Mesh into a 4-D Hypercube ($r=2, s=2$)
+- Mesh node $(1, 1)$:
+  - Row index 1 in 2-bit Gray code: $G(1, 2) = 01_2$
+  - Column index 1 in 2-bit Gray code: $G(1, 2) = 01_2$
+  - Concatenated address: **$0101_2$** (Node 5 in hypercube).
+- Neighbors of $(1, 1)$:
+  - North $(0, 1) \implies G(0, 2) \parallel G(1, 2) = 0001_2$ (Hamming dist from $0101$ is 1).
+  - South $(2, 1) \implies G(2, 2) \parallel G(1, 2) = 1101_2$ (Hamming dist from $0101$ is 1).
+  - West $(1, 0) \implies G(1, 2) \parallel G(0, 2) = 0100_2$ (Hamming dist from $0101$ is 1).
+  - East $(1, 2) \implies G(1, 2) \parallel G(2, 2) = 0111_2$ (Hamming dist from $0101$ is 1).
+- Every neighbor in the mesh maps to an immediate physical neighbor in the 4-D hypercube!
+- **Results**: Dilation $= 1$, Congestion $= 1$, Expansion $= 1$.
+
+## Why a Mesh Cannot Map to a Linear Array Without Congestion
+
+Can a 2-D mesh be embedded into a linear array with Dilation 1 and Congestion 1? **No.**
+
+### Mathematical Proof by Bisection Width
+- Consider a $\sqrt{p} \times \sqrt{p}$ 2-D mesh with bisection width $B_{mesh} = \sqrt{p}$.
+- The host linear array has bisection width $B_{linear} = 1$.
+- When partitioning the $p$ nodes into two halves $V_1, V_2$ of $p/2$ nodes each, in the mesh there are at least $\sqrt{p}$ edges passing between $V_1$ and $V_2$.
+- In the linear array, there is only **one single physical link** crossing the bisection cut!
+- By the Pigeonhole Principle, that single physical link must carry all $\sqrt{p}$ crossing edges:
+
+$$
+\text{Congestion} \ge \frac{B_{mesh}}{B_{linear}} = \frac{\sqrt{p}}{1} = \sqrt{p}
+$$
+
+Alternatively, if we force Congestion $\le 1$, then long edges must stretch over multiple intermediate links, resulting in average Dilation $\ge \Omega(\sqrt{p})$.
+
+## Interactive Gray Code Visualizer
+
+Explore the mapping of rings and $4 \times 4$ meshes into hypercubes:
+
+<GrayCodeVisualizer />

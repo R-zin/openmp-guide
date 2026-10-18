@@ -1,0 +1,73 @@
+---
+id: 04-pipeline-conflicts
+slug: 04-pipeline-conflicts
+technology: vectors
+order: 4
+title: "Pipeline Conflicts and Hazards"
+description: "Classification of pipeline hazards: Structural/Resource conflicts, Data dependencies, and Control/Branch difficulties with hardware solutions."
+readingTimeMinutes: 12
+sections:
+  - id: three-major-difficulties
+    title: "The Three Major Pipeline Difficulties"
+    level: 2
+  - id: resource-conflicts
+    title: "1. Resource Conflicts (Structural Hazards)"
+    level: 2
+  - id: data-dependencies
+    title: "2. Data Dependencies (Data Hazards)"
+    level: 2
+  - id: branch-difficulties
+    title: "3. Branch Difficulties (Control Hazards)"
+    level: 2
+  - id: vector-solutions
+    title: "How Vector Processors Mitigate Pipeline Conflicts"
+    level: 2
+---
+
+## The Three Major Pipeline Difficulties
+
+In an ideal pipeline, exactly one instruction or task enters every cycle, and exactly one result departs. In real hardware, three primary conditions disrupt smooth pipeline flow, causing **pipeline stalls (bubbles)**:
+1. **Resource Conflicts** (Structural Hazards)
+2. **Data Dependencies** (Data Hazards)
+3. **Branch Difficulties** (Control Hazards)
+
+## 1. Resource Conflicts (Structural Hazards)
+
+A **resource conflict** arises when the physical hardware cannot support all possible combinations of instructions in the same clock cycle because two or more segments demand simultaneous access to the same shared physical hardware resource:
+- **Single-Ported Memory Contention**: Occurs if an instruction fetch stage and a data memory access stage attempt to read from the same memory bank simultaneously.
+- **Shared Multipliers / Dividers**: In non-fully pipelined functional units, an operation requiring multiple cycles (e.g. division) blocks subsequent instructions from entering that execution segment.
+
+### Hardware Solutions
+- Separate Harvard memory architecture (separate Instruction Cache and Data Cache).
+- Multi-ported register files with dedicated independent read and write ports.
+- Interleaved, multi-bank memory systems.
+
+## 2. Data Dependencies (Data Hazards)
+
+A **data dependency** occurs when an instruction in the pipeline depends on the result of a preceding instruction that has not yet exited the execution unit:
+- **Read-After-Write (RAW / True Data Dependency)**: Instruction $J$ attempts to read operand $R_1$ before instruction $I$ has written its result to $R_1$.
+- **Write-After-Read (WAR / Anti-Dependency)**: Instruction $J$ writes to register $R_1$ before instruction $I$ reads its existing value.
+- **Write-After-Write (WAW / Output Dependency)**: Instruction $J$ writes to $R_1$ before instruction $I$ writes to $R_1$, risking incorrect final state in out-of-order execution.
+
+### Hardware Solutions
+- **Operand Forwarding (Bypassing)**: Routing the computed result directly from the output of an ALU stage back into the input multiplexer of the next instruction's ALU stage, bypassing register file write latency.
+- **Vector Chaining**: Allowing a second vector functional unit to begin processing the first output elements of a preceding vector unit as soon as they emerge, without waiting for the entire vector of 64 elements to complete.
+
+## 3. Branch Difficulties (Control Hazards)
+
+A **branch difficulty** arises from conditional and unconditional branch instructions that alter the Program Counter:
+- In a pipelined CPU, subsequent instructions are fetched before the conditional branch outcome is evaluated in later execution stages.
+- If the branch is taken, all speculatively fetched instructions in preceding stages must be purged (**pipeline flush**), wasting cycles.
+
+### Hardware Solutions
+- **Branch Target Buffers (BTB)** and dynamic branch predictors.
+- **Delayed Branching**: Reorganizing code so instructions in the branch delay slot always execute safely.
+- **Predicated Execution / Vector Masking**: In vector processors, conditional statements (`if-else`) inside loops are executed using **vector mask registers (`VMASK`)**. Instead of branching, all iterations execute, and the mask simply enables or disables write-back of results into the destination vector register.
+
+## How Vector Processors Mitigate Pipeline Conflicts
+
+| Pipeline Difficulty | Impact on Scalar CPU | Vector Processor Mitigation |
+| :--- | :--- | :--- |
+| **Control Hazards** | Constant branch flushes in loops | Entire loop replaced by 1 vector instruction; zero branches! |
+| **Data Hazards** | Frequent RAW stalls between loop steps | Intra-vector elements are guaranteed independent by ISA definition |
+| **Structural Hazards** | Register file port bottlenecks | Multi-ported vector registers with dedicated read/write reservation channels |

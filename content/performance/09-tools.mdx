@@ -1,0 +1,148 @@
+---
+id: 09-tools
+slug: 09-tools
+technology: performance
+order: 9
+title: "HPC Performance Tool Suite: Score-P, Scalasca, PMPI, and Energy Analyzer"
+description: "In-depth guide to Score-P, Scalasca wait-state analysis, distinguishing PMPI from mpiP, Energy Analyzer (EDP), and practical manual timing."
+readingTimeMinutes: 18
+sections:
+  - id: scorep-framework
+    title: "Score-P: Unified Instrumentation Framework"
+    level: 2
+  - id: scalasca-analysis
+    title: "Scalasca: Automatic Wait-State Analysis"
+    level: 2
+  - id: watch-out-pmpi-mpip
+    title: "Watch Out: PMPI Interface vs. mpiP Tool"
+    level: 2
+  - id: energy-analyzer
+    title: "Energy Analyzer and Energy-Delay Product (EDP)"
+    level: 2
+  - id: other-tools
+    title: "Visualization Tools: Vampir, Paraver, Intel ITAC"
+    level: 2
+  - id: practical-timing
+    title: "Practical Manual Timing with MPI_Wtime and omp_get_wtime"
+    level: 2
+---
+
+## Score-P: Unified Instrumentation Framework
+
+**Score-P (Scalable Performance Measurement Infrastructure for Parallel Codes)** is the premier open-source measurement infrastructure used by modern HPC centers:
+- Acts as a unified instrumentation front-end that simultaneously supports multiple back-end analysis tools: **Scalasca** (automatic analysis), **CUBE** (profile visualization), and **Vampir** (trace visualization).
+- Supports MPI, OpenMP, OpenACC, CUDA, and hybrid programming models.
+
+### Standard Score-P Workflow
+1. **Instrument and Compile**: Prepend compiler commands with `scorep`:
+   ```bash
+   scorep mpicc -O3 -fopenmp simulation.c -o simulation
+   ```
+2. **Execute**: Run the binary normally across cluster ranks:
+   ```bash
+   mpirun -np 16 ./simulation
+   ```
+3. **Generated Artifacts**:
+   - `profile.cubex`: Compact hierarchical call-path profile viewed with the CUBE visualizer.
+   - `traces.otf2`: Complete OTF2 event trace directory (when `SCOREP_ENABLE_TRACING=true`).
+
+## Scalasca: Automatic Wait-State Analysis
+
+**Scalasca** is an automated performance analysis tool built directly on top of Score-P:
+- Rather than requiring a human engineer to manually inspect billions of timeline events in a GUI, Scalasca automatically scans the OTF2 trace using parallel search algorithms to detect known **wait-state patterns**:
+  1. **Late Sender**: A receiving process posts `MPI_Recv` early and sits idle waiting because the sending process is delayed in a preceding computation.
+  2. **Late Receiver**: The sending process is blocked in synchronous `MPI_Ssend` waiting for the receiver to post a receive buffer.
+  3. **Wait at Barrier**: Processes arrive at `MPI_Barrier` at different times and idle waiting for the slowest rank.
+
+## Watch Out: PMPI Interface vs. mpiP Tool
+
+<Callout type="warning" title="Watch Out: PMPI Interface vs. mpiP Tool">
+A ubiquitous source of confusion in student exams is conflating **PMPI** with **mpiP**:
+1. **PMPI (MPI Profiling Interface)**:
+   - PMPI is a **standard architectural mechanism** defined within the official MPI specification.
+   - Every standard MPI function (e.g. `MPI_Send`) is internally aliased to a weak symbol duplicate (`PMPI_Send`).
+   - This allows any tool developer to write a custom wrapper library that intercepts `MPI_Send`, records timestamps, and then calls `PMPI_Send` under the hood without needing access to MPI library source code.
+2. **mpiP (Lightweight Profiling Tool)**:
+   - `mpiP` is a specific, standalone **software tool** that uses the PMPI interface.
+   - It is a lightweight profiling library that outputs a simple text report showing call counts, message bytes, and percentage time spent in each MPI routine per rank.
+
+**Exam Rule**: PMPI is the **API interface mechanism**; mpiP is a **specific profiling tool** that utilizes PMPI!
+</Callout>
+
+## Energy Analyzer and Energy-Delay Product (EDP)
+
+Modern supercomputing is bounded by electrical power and cooling budgets (megawatts), making **energy efficiency** as vital as raw speed:
+- **Power ($P$)**: Rate of energy consumption, measured in Watts ($1\text{ W} = 1\text{ J/s}$).
+- **Energy ($E$)**: Total energy consumed over the duration of the job:
+  $$
+  E = \int_0^T P(t) \, dt = P_{\text{avg}} \times T \quad \text{(Joules or Kilowatt-hours)}
+  $$
+- **Energy-to-Solution**: The total Joules required to complete a fixed computational task.
+- **Energy-Delay Product (EDP)**: A unified figure of merit that penalizes systems that save energy at the expense of excessive runtime:
+  $$
+  \text{EDP} = \text{Energy} \times \text{Runtime} = E \times T
+  $$
+  A lower EDP signifies superior energy-efficient computational performance.
+
+## Visualization Tools: Vampir, Paraver, Intel ITAC
+
+- **Vampir (Visualization of Applied Micro-architectures on Parallel Computers)**: Commercial high-end interactive GUI for visualizing massive OTF2 traces as multi-rank Gantt charts.
+- **Paraver**: Flexible open-source trace visualizer from BSC (Barcelona Supercomputing Center) based on flexible mathematical matrix filters.
+- **Intel Trace Analyzer and Collector (ITAC)**: Intel's dedicated tracing and timeline analysis suite for MPI on Intel architectures.
+
+## Practical Manual Timing with MPI_Wtime and omp_get_wtime
+
+Before deploying heavy instrumentation suites, developers routinely benchmark code using built-in high-resolution timers:
+
+```c
+/* manual_timing.c - Complete compilable benchmark demonstration */
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
+#include <omp.h>
+
+int main(int argc, char *argv[]) {
+    int rank, size;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    /* 1. Synchronize ranks to establish clean starting baseline */
+    MPI_Barrier(MPI_COMM_WORLD);
+    double t_start = MPI_Wtime();
+
+    /* 2. Execute computational workload */
+    long long sum = 0;
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < 10000000; i++) {
+        sum += (i * (rank + 1)) % 7;
+    }
+
+    /* 3. Record elapsed time */
+    double t_end = MPI_Wtime();
+    double local_elapsed = t_end - t_start;
+
+    /* 4. Reduce to find max execution time across all ranks */
+    double max_elapsed;
+    MPI_Reduce(&local_elapsed, &max_elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Benchmark Finished: Max Wall Time across %d ranks = %.6f seconds\n",
+               size, max_elapsed);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+```
+
+### Compile and Run Commands
+```bash
+mpicc -O3 -fopenmp manual_timing.c -o manual_timing
+mpirun -np 4 ./manual_timing
+```
+
+### Expected Output
+```text
+Benchmark Finished: Max Wall Time across 4 ranks = 0.012480 seconds
+```

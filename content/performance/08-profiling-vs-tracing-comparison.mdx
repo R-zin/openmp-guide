@@ -1,0 +1,51 @@
+---
+id: 08-profiling-vs-tracing-comparison
+slug: 08-profiling-vs-tracing-comparison
+technology: performance
+order: 8
+title: "Profiling vs. Tracing: Architectural Comparison"
+description: "Comprehensive comparative analysis of profiling vs tracing across overhead, data size, scalability, and diagnostic capability."
+readingTimeMinutes: 10
+sections:
+  - id: master-comparison-table
+    title: "Profiling vs. Tracing Master Comparison Table"
+    level: 2
+  - id: when-to-profile
+    title: "When to Use Profiling"
+    level: 2
+  - id: when-to-trace
+    title: "When to Use Tracing"
+    level: 2
+---
+
+## Profiling vs. Tracing Master Comparison Table
+
+The following master comparison table summarizes the critical trade-offs between profiling and tracing:
+
+| Evaluation Aspect | Profiling (Summary Aggregation) | Tracing (Chronological Event Log) |
+| :--- | :--- | :--- |
+| **Fundamental Output** | Aggregated statistical summary tables | Exact time-ordered log of every event |
+| **Temporal Dynamic** | Discarded (time is integrated over the entire run) | **Preserved completely** (full timeline) |
+| **Output File Size** | Compact: Kilobytes to Megabytes (constant) | **Enormous**: Gigabytes to Terabytes |
+| **Execution Overhead** | Low to moderate ($1\% - 5\%$) | Moderate to high ($5\% - 30\%+$) |
+| **Storage Scalability** | Excellent ($O(p \times \text{functions})$) | Poor ($O(p \times \text{events} \times \text{time})$) |
+| **Hardware Counters** | Aggregates PAPI event totals per function | Correlates PAPI bursts to exact moments |
+| **Wait-State Diagnosis** | Indicates wait time occurred, but not why | **Proves causality** (e.g. Late Sender) |
+| **Message Flight Path** | None (only total bytes and calls recorded) | Displays message arrows between ranks |
+| **Typical Tools** | gprof, perf, Score-P CUBE, mpiP, PAPI | Vampir, Scalasca, Paraver, Intel ITAC |
+
+## When to Use Profiling
+
+Use profiling during the **initial diagnostic phase**:
+1. When running production workloads for long execution times (hours or days).
+2. When surveying a massive codebase to answer: *"Where are the top 3 functions consuming 80% of our CPU time?"*
+3. When memory or disk space is constrained on compute nodes.
+4. When measuring aggregate hardware counter rates (e.g. Cache Misses per Instruction, IPC).
+
+## When to Use Tracing
+
+Use tracing during the **deep investigation phase**:
+1. When profiling indicates high communication overhead in `MPI_Recv` or `MPI_Barrier`, but you need to prove *which specific rank* arrived late.
+2. To diagnose dynamic temporal imbalances that fluctuate between iterations.
+3. When verifying message communication topologies and identifying network contention bottlenecks.
+4. For short, focused execution runs (e.g., running 2 to 3 representative simulation iterations with a Score-P filter applied).

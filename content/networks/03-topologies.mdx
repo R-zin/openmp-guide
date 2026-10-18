@@ -1,0 +1,147 @@
+---
+id: 03-topologies
+slug: 03-topologies
+technology: networks
+order: 3
+title: "Network Topologies and Architectures"
+description: "Exhaustive coverage of Completely Connected, Star, Linear Array, Ring, Meshes, Torus, Hypercubes, Trees, and k-ary d-cubes with SVG diagrams."
+readingTimeMinutes: 18
+sections:
+  - id: completely-connected-star
+    title: "Completely Connected & Star Networks"
+    level: 2
+  - id: linear-ring
+    title: "Linear Arrays and Rings"
+    level: 2
+  - id: meshes-torus
+    title: "2-D / 3-D Meshes and Tori"
+    level: 2
+  - id: hypercube-family
+    title: "Hypercube Architecture (0-D to 4-D)"
+    level: 2
+  - id: trees-fat-trees
+    title: "Binary Trees and Fat Trees"
+    level: 2
+  - id: k-ary-d-cube
+    title: "k-ary d-cube Generalization"
+    level: 2
+  - id: interactive-explorer
+    title: "Interactive Topology Explorer"
+    level: 2
+---
+
+## Completely Connected & Star Networks
+
+### 1. Completely Connected Network
+In a completely connected topology, every node has a direct, dedicated physical link to every other node in the network:
+- **Diameter**: $D = 1$
+- **Bisection Width**: $B_w = \frac{p^2}{4}$ (for even $p$)
+- **Node Degree**: $d = p - 1$
+- **Total Links**: $|C| = \frac{p(p-1)}{2} = O(p^2)$
+
+<Diagram type="completely-connected" caption="Completely connected topology for p = 8 nodes (28 links)." />
+
+**Evaluation**: Ideal unit latency and maximum bisection bandwidth, but financially and physically impractical beyond small $p$ (e.g. for $p = 1024$, links $= 523,776$).
+
+### 2. Star Network
+A star network features one central routing hub node to which all remaining $p - 1$ peripheral processing nodes connect:
+- **Diameter**: $D = 2$ (every node talks to any other node in 2 hops via the hub)
+- **Bisection Width**: $B_w = 1$ (cutting any half of the periphery severs the hub link)
+- **Node Degree**: Central hub $= p - 1$; Peripheral nodes $= 1$
+- **Total Links**: $|C| = p - 1$
+
+<Diagram type="star-network" caption="Star network for p = 8 nodes." />
+
+**Evaluation**: The central hub forms a severe single point of failure and bandwidth bottleneck.
+
+## Linear Arrays and Rings
+
+### 1. Linear Array (1-D Mesh)
+Nodes are arranged along a line. Each internal node connects to two neighbors; end nodes connect to one:
+- **Diameter**: $D = p - 1$
+- **Bisection Width**: $B_w = 1$
+- **Node Degree**: 2 (interior), 1 (ends)
+- **Total Links**: $|C| = p - 1$
+
+### 2. Ring Topology ($|C| = p$)
+A linear array with an added wraparound link connecting the first and last nodes:
+- **Diameter**: $D = \lfloor p / 2 \rfloor$
+- **Bisection Width**: $B_w = 2$ (two cuts sever the ring into two halves)
+- **Node Degree**: $d = 2$ (strictly regular)
+- **Total Links**: $|C| = p$
+
+<Diagram type="linear-array-ring" caption="Linear Array (p = 4) vs Ring (p = 6)." />
+
+## 2-D / 3-D Meshes and Tori
+
+### 1. 2-Dimensional Mesh (No Wraparound)
+Let $p = s \times s$, so $s = \sqrt{p}$:
+- Nodes arranged in a rectangular grid of rows and columns.
+- **Diameter**: $D = 2(\sqrt{p} - 1)$
+- **Bisection Width**: $B_w = \sqrt{p}$
+- **Node Degree**: 4 (interior), 3 (edges), 2 (corners)
+- **Total Links**: $|C| = 2(p - \sqrt{p})$
+
+### 2. 2-Dimensional Torus (2-D Wraparound Mesh)
+Formed by adding wraparound links along both rows and columns:
+- **Diameter**: $D = 2 \lfloor \sqrt{p} / 2 \rfloor$
+- **Bisection Width**: $B_w = 2\sqrt{p}$
+- **Node Degree**: $d = 4$ (completely regular)
+- **Total Links**: $|C| = 2p$
+
+<Diagram type="mesh-2d-3d" caption="4x4 2D Mesh and Torus wraparound links." />
+
+### 3. $d$-Dimensional Mesh ($p = k^d$)
+- **Diameter**: $D = d \cdot p^{1/d} = d(k - 1)$
+- **Bisection Width**: $B_w = p^{1 - 1/d} = k^{d-1}$
+- **Node Degree**: $2d$ for interior nodes
+
+## Hypercube Architecture (0-D to 4-D)
+
+A **$d$-dimensional hypercube** (or binary $n$-cube) is constructed recursively by taking two $(d-1)$-dimensional hypercubes and connecting corresponding nodes:
+- Total nodes: $p = 2^d \implies d = \log_2 p$.
+- **Node Labeling**: Each node is assigned a unique $d$-bit binary identifier: $b_{d-1} b_{d-2} \dots b_1 b_0$.
+- **Adjacency Rule**: Two nodes are directly connected by an edge if and only if their binary identifiers differ in **exactly one bit position** (Hamming distance $= 1$).
+- **Distance Metric**: The shortest distance between nodes $u$ and $v$ is the **Hamming distance** $H(u, v)$ (number of 1s in $u \oplus v$).
+- **Diameter**: $D = d = \log_2 p$ (at most $\log_2 p$ hops between antipodal nodes).
+- **Bisection Width**: $B_w = \frac{p}{2}$
+- **Node Degree**: $d = \log_2 p$ (grows logarithmically with cluster size).
+- **Total Links**: $|C| = \frac{p \log_2 p}{2}$
+
+<Diagram type="hypercube-dimensions" caption="Hypercube family: 0-D point, 1-D line, 2-D square, 3-D cube with binary labels." />
+
+## Binary Trees and Fat Trees
+
+### 1. Complete Binary Tree
+- Processors placed either at every node or only at leaves:
+  - If processing nodes are placed at all nodes ($p = 2^{k+1} - 1$): Diameter $D = 2 \log_2((p+1)/2)$.
+  - **Bisection Width**: $B_w = 1$ (the root edges form a critical communication bottleneck).
+- **Node Degree**: Root $= 2$, Internal $= 3$, Leaf $= 1$.
+- **Total Links**: $|C| = p - 1$.
+
+### 2. Fat Tree (Leiserson Architecture)
+To eliminate the root bisection bottleneck, Charles Leiserson proposed the **fat tree**, where channel bandwidth increases geometrically toward the root:
+- Channel capacity doubles at each ascending level.
+- Bisection width scales as $B_w = \Omega(p)$.
+- Widely used in modern Infiniband and datacenter clos-network architectures.
+
+<Diagram type="tree-fat-tree" caption="Complete binary tree vs Fat tree with increasing link capacity." />
+
+## k-ary d-cube Generalization
+
+A **$k$-ary $d$-cube** is a $d$-dimensional wraparound network with $k$ nodes in each dimension:
+- Total processors: $p = k^d$
+- **Diameter**: $D = d \cdot \lfloor k / 2 \rfloor$
+- **Bisection Width**: $B_w = 2k^{d-1}$
+- **Node Degree**: $2d$
+- **Total Links**: $|C| = d \cdot p$
+- **Special Cases**:
+  - If $k = 2$: $2$-ary $d$-cube is a **hypercube** ($p = 2^d$).
+  - If $d = 2$: $k$-ary $2$-cube is a **2-D torus** ($p = k^2$).
+  - If $d = 3$: $k$-ary $3$-cube is a **3-D torus** (e.g. Cray XT, IBM Blue Gene/L).
+
+## Interactive Topology Explorer
+
+Use the interactive tool below to select any topology and evaluate its metrics live:
+
+<TopologyExplorer />

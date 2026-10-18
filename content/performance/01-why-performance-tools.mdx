@@ -1,0 +1,68 @@
+---
+id: 01-why-performance-tools
+slug: 01-why-performance-tools
+technology: performance
+order: 1
+title: "Why Performance Tools? Bottlenecks in Parallel Systems"
+description: "Understanding why parallel programs rarely achieve linear speedup and identifying root causes of inefficiency."
+readingTimeMinutes: 14
+sections:
+  - id: the-parallel-performance-gap
+    title: "The Parallel Performance Gap"
+    level: 2
+  - id: load-imbalance
+    title: "1. Computational Load Imbalance"
+    level: 2
+  - id: communication-overhead
+    title: "2. MPI Communication and Network Delays"
+    level: 2
+  - id: synchronisation-and-locks
+    title: "3. OpenMP Synchronisation and Lock Contention"
+    level: 2
+  - id: cache-and-numa
+    title: "4. Memory Hierarchy, Cache, and NUMA Effects"
+    level: 2
+  - id: serial-fractions
+    title: "5. Amdahl's Law and Inherent Serial Bottlenecks"
+    level: 2
+---
+
+## The Parallel Performance Gap
+
+When developing parallel applications with MPI and OpenMP, developers frequently observe a discouraging phenomenon: running on 16 or 64 cores fails to yield a 16x or 64x speedup. In fact, scaling beyond a certain thread count often causes total wall-clock execution time to **increase**.
+
+Parallel programs rarely achieve ideal linear speedup because parallelisation introduces hardware contention, software synchronization, and coordination costs that do not exist in sequential code. 
+
+**Performance tools** are specialized diagnostic software infrastructures designed to measure, attribute, and visualize where time and energy are squandered across thousands of processes and threads.
+
+## 1. Computational Load Imbalance
+
+**Load imbalance** occurs when computational work is distributed unevenly among processes or threads:
+- In an MPI cluster running 100 ranks, if 99 ranks finish their computational partition in 2 seconds, but 1 rank requires 10 seconds (due to complex boundary geometry or irregular data), all 99 ranks must sit completely idle at the next collective barrier (`MPI_Barrier`, `MPI_Reduce`) for 8 seconds.
+- The slowest thread or rank dictates the wall-clock speed of the entire system.
+- *Visual Signature*: High idle wait time at barriers and receive calls.
+
+## 2. MPI Communication and Network Delays
+
+Inter-node communication across network fabrics (Ethernet, InfiniBand) is orders of magnitude slower than on-chip registers or L1 cache:
+- **Transmission Latency ($t_s$)**: Startup cost to inject a packet into the network interface.
+- **Network Contention**: When multiple ranks simultaneously send messages over the same switch link (e.g. in `MPI_Alltoall`), bisection bandwidth is saturated, causing packet queuing and jitter.
+- **Late Sender / Late Receiver**: Blocking point-to-point calls (`MPI_Recv`) stall if the sender has not yet reached its corresponding `MPI_Send`.
+
+## 3. OpenMP Synchronisation and Lock Contention
+
+In shared-memory multi-core systems, threads must coordinate access to shared variables:
+- **Critical Section Serialization**: When multiple threads contend for `#pragma omp critical` or explicit locks (`omp_set_lock`), all competing threads are serialized into a sequential queue.
+- **Implicit Barrier Overhead**: Every OpenMP work-sharing loop (`#pragma omp for`) includes an implicit barrier at the end of the block unless suppressed by `nowait`.
+
+## 4. Memory Hierarchy, Cache, and NUMA Effects
+
+Multi-core performance is heavily constrained by the memory subsystem:
+- **False Sharing**: Occurs when threads on different cores update independent variables that happen to reside on the **same 64-byte cache line**. Coherence protocols (MESI) invalidate the entire cache line across cores, causing continuous bus bouncing and drastic slowdowns.
+- **Non-Uniform Memory Access (NUMA)**: On multi-socket motherboards, accessing RAM connected to a remote CPU socket incurs higher latency and lower bandwidth than accessing local RAM.
+
+## 5. Amdahl's Law and Inherent Serial Bottlenecks
+
+Every realistic program contains inherently serial portions (file I/O, initialization, command-line parsing, serial reductions). As demonstrated by Amdahl's Law, even a 5% serial fraction limits theoretical speedup to a maximum of 20x, regardless of whether 1,000 or 100,000 processors are allocated.
+
+Performance analysis tools provide the empirical evidence required to locate and eliminate these bottlenecks systematically.

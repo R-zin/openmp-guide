@@ -1,0 +1,131 @@
+---
+id: 06-vector-processor-concepts
+slug: 06-vector-processor-concepts
+technology: vectors
+order: 6
+title: "Core Vector Processor Concepts and Strip-Mining"
+description: "Vector registers, VLEN, MVL, stride, strip-mining algorithm, memory interleaving, and scalar vs vector code."
+readingTimeMinutes: 16
+sections:
+  - id: vector-registers-mvl
+    title: "Vector Registers, VLEN, and MVL"
+    level: 2
+  - id: vector-stride
+    title: "Vector Stride and Non-Unit Memory Access"
+    level: 2
+  - id: strip-mining
+    title: "Strip-Mining When n > MVL"
+    level: 2
+  - id: memory-interleaving
+    title: "Memory Interleaving and Bank Conflicts"
+    level: 2
+  - id: scalar-vs-vector-code
+    title: "100-Element Addition: Scalar vs. Vector Code"
+    level: 2
+  - id: matrix-mult-cost
+    title: "Matrix Multiplication Vector Cost (n^3 Operations)"
+    level: 2
+  - id: interactive-stripmining
+    title: "Interactive Vector Loop & Strip-Mining Simulator"
+    level: 2
+---
+
+## Vector Registers, VLEN, and MVL
+
+Vector architectures structure data storage around specialized register sets:
+- **Maximum Vector Length (MVL)**: The fixed physical hardware capacity of a vector register (e.g., in Cray-1 and VMIPS, $\text{MVL} = 64$ elements).
+- **Vector Length Register (VLEN)**: A dynamic special-purpose control register that specifies how many elements are to be processed by subsequent vector instructions ($0 \le \text{VLEN} \le \text{MVL}$).
+- When an application loop processes a vector shorter than MVL (e.g. 25 elements), software sets $\text{VLEN} = 25$. Subsequent vector operations execute only on elements $0$ through $24$, avoiding unnecessary computation.
+
+## Vector Stride and Non-Unit Memory Access
+
+In multi-dimensional array processing, consecutive vector elements in memory do not always reside in adjacent addresses:
+- **Unit Stride (Stride = 1)**: Elements reside in contiguous adjacent memory words (e.g., iterating across rows in C row-major layout).
+- **Non-Unit Stride (Stride > 1)**: Elements are separated by a constant interval (e.g., accessing a column of a matrix stored in row-major layout has stride equal to row width).
+- **Vector Stride Register (VSTR)**: Holds the byte step size between consecutive vector elements.
+- **Gather / Scatter (Indexed Stride)**: Non-constant addressing using an index vector for sparse matrices ($C[A[i]] = B[i]$).
+
+## Strip-Mining When n > MVL
+
+When a user program processes an array of size $n$ that exceeds the hardware limit ($n > \text{MVL}$), the compiler generates a technique called **strip-mining**:
+1. The long loop of $n$ iterations is partitioned into chunks (strips) of maximum size $\text{MVL}$.
+2. The first strip processes the **remainder elements**:
+   $$
+   \text{first\_len} = n \pmod{\text{MVL}}
+   $$
+   (If $n$ is an exact multiple of MVL, the first strip processes MVL elements).
+3. All subsequent strips process exactly $\text{MVL}$ elements.
+4. Total strip-mining loop iterations:
+   $$
+   \text{Passes} = \left\lceil \frac{n}{\text{MVL}} \right\rceil
+   $$
+
+### Worked Example: $n = 100$, $\text{MVL} = 64$
+- $\text{Passes} = \lceil 100 / 64 \rceil = 2$ passes.
+- **Pass 1**: $\text{VLEN} = 100 \pmod{64} = 36$ elements. Processes indices $0$ to $35$.
+- **Pass 2**: $\text{VLEN} = 64$ elements. Processes indices $36$ to $99$.
+
+## Memory Interleaving and Bank Conflicts
+
+To supply 1 or 2 64-bit words per cycle to high-speed vector functional units, main memory is organized into **interleaved memory banks**:
+- **Address Mapping**: Address $A$ is routed to memory bank $B = A \pmod M$, where $M$ is the number of banks.
+- **Memory Bank Cycle Time ($t_{cycle}$)**: After a bank is accessed, it cannot service another request for $t_{cycle}$ clock cycles.
+- **Bank Conflict**: If a strided vector access hits the same memory bank before $t_{cycle}$ has elapsed, the vector load stalls.
+- **Golden Rule**: Bank conflicts occur whenever the stride and the number of banks share a common factor: $\gcd(\text{stride}, M) > 1$. Odd strides and prime bank counts prevent conflicts!
+
+## 100-Element Addition: Scalar vs. Vector Code
+
+Consider calculating $C[i] = A[i] + B[i]$ for $n = 100$ double-precision floats:
+
+### 1. Scalar Assembly Loop (MIPS)
+```assembly
+    LI   R1, 0          ; i = 0
+LOOP:
+    LW   R2, 0(Ra)      ; Load A[i]
+    LW   R3, 0(Rb)      ; Load B[i]
+    ADD  R4, R2, R3     ; Add A[i] + B[i]
+    SW   R4, 0(Rc)      ; Store C[i]
+    ADDI Ra, Ra, 8      ; Advance ptr A
+    ADDI Rb, Rb, 8      ; Advance ptr B
+    ADDI Rc, Rc, 8      ; Advance ptr C
+    ADDI R1, R1, 1      ; i++
+    BNE  R1, 100, LOOP  ; Loop test
+```
+- **Total Instructions Executed**: $100 \times 6 = 600$ instructions!
+- High branch prediction traffic, instruction cache misses, and pipeline stalls.
+
+### 2. VMIPS Vector Assembly (with Strip-Mining)
+```assembly
+    LI    R1, 36        ; 100 % 64 = 36 elements first
+    MTC1  VLEN, R1      ; Set hardware VLEN = 36
+STRIP:
+    LV    V1, Ra        ; Vector Load array A
+    LV    V2, Rb        ; Vector Load array B
+    ADDV  V3, V1, V2    ; 1 instruction adds 36 (or 64) elements!
+    SV    V3, Rc        ; Vector Store array C
+    SLL   R2, R1, 3     ; byte offset = VLEN * 8
+    DADDU Ra, Ra, R2    ; Advance pointers
+    DADDU Rb, Rb, R2
+    DADDU Rc, Rc, R2
+    DSUBU R_rem, R_rem, R1 ; Decrement remaining
+    LI    R1, 64        ; Set VLEN = 64 for next pass
+    MTC1  VLEN, R1
+    BGTZ  R_rem, STRIP  ; Loop only twice!
+```
+- **Total Instructions Executed**: Only 12 instructions executed across both passes!
+
+## Matrix Multiplication Vector Cost (n^3 Operations)
+
+Multiplying two $n \times n$ matrices $C = A \times B$:
+- Standard scalar algorithm executes 3 nested loops:
+  $$
+  C_{i, j} = \sum_{k=0}^{n-1} A_{i, k} \times B_{k, j}
+  $$
+- Total floating-point operations: $n^3$ multiplications and $n^3$ additions $= 2n^3$ FLOPs.
+- In vector processors, the innermost loop is replaced by an **accumulating vector inner product** (or vector-matrix row multiply-add). The number of instruction issues drops from $O(n^3)$ to $O(n^2)$.
+
+## Interactive Vector Loop & Strip-Mining Simulator
+
+Test different array sizes and hardware vector limits live:
+
+<VectorLoopComparison />

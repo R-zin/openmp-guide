@@ -1,0 +1,116 @@
+---
+id: 03-pipelining
+slug: 03-pipelining
+technology: vectors
+order: 3
+title: "Pipelining Principles and Space-Time Analysis"
+description: "Pipeline segments, interface registers, the Ai * Bi + Ci three-segment derivation, clock-by-clock execution, and space-time diagrams."
+readingTimeMinutes: 16
+sections:
+  - id: pipelining-foundations
+    title: "Pipelining Foundations: Segments and Registers"
+    level: 2
+  - id: three-segment-example
+    title: "The Ai * Bi + Ci Three-Segment Example"
+    level: 2
+  - id: speedup-derivation
+    title: "Speedup and Efficiency Derivation"
+    level: 2
+  - id: spacetime-diagram
+    title: "Space-Time Diagram: Tasks T1 to T6 on a 4-Segment Pipeline"
+    level: 2
+  - id: interactive-pipeline
+    title: "Interactive Pipeline Space-Time Simulator"
+    level: 2
+---
+
+## Pipelining Foundations: Segments and Registers
+
+**Pipelining** is an implementation technique where multiple arithmetic operations are overlapped in execution across a partitioned sequential hardware circuit, analogous to an industrial manufacturing assembly line:
+- The execution unit is divided into $k$ independent functional sub-operations called **segments** (or stages).
+- Between adjacent segments, high-speed **interface registers (latches)** isolate the computational logic and synchronize data transfers on each clock pulse.
+- All segments operate concurrently on different operands.
+
+<Diagram type="pipeline-3seg" caption="Three-segment arithmetic pipeline for Ai * Bi + Ci with intermediate latches R1 and R2." />
+
+## The Ai * Bi + Ci Three-Segment Example
+
+Consider the evaluation of $n$ independent vector arithmetic operations:
+
+$$
+R_i = A_i \times B_i + C_i \quad \text{for } i = 1, 2, \dots, n
+$$
+
+We decompose the calculation into a **3-segment pipeline** ($k = 3$):
+1. **Segment 1**: Multiply operands $A_i$ and $B_i$.
+   - Output stored in latch register $R_1 \leftarrow A_i \times B_i$.
+2. **Segment 2**: Add operand $C_i$ to intermediate product.
+   - Output stored in latch register $R_2 \leftarrow R_1 + C_i$.
+3. **Segment 3**: Write the final result into destination register.
+   - Output stored in register file $R_3 \leftarrow R_2$.
+
+### Clock-by-Clock Execution Table (for $n = 7$ tasks)
+
+| Clock Pulse | Segment 1 ($A_i \times B_i$) | Segment 2 ($R_1 + C_i$) | Segment 3 (Write $R_i$) | System Output Completed |
+| :---: | :---: | :---: | :---: | :---: |
+| **C1** | Task 1 ($A_1 \times B_1$) | — | — | None |
+| **C2** | Task 2 ($A_2 \times B_2$) | Task 1 ($R_1 + C_1$) | — | None |
+| **C3** | Task 3 ($A_3 \times B_3$) | Task 2 ($R_1 + C_2$) | Task 1 (Write) | **$R_1$ Complete** |
+| **C4** | Task 4 ($A_4 \times B_4$) | Task 3 ($R_1 + C_3$) | Task 2 (Write) | **$R_2$ Complete** |
+| **C5** | Task 5 ($A_5 \times B_5$) | Task 4 ($R_1 + C_4$) | Task 3 (Write) | **$R_3$ Complete** |
+| **C6** | Task 6 ($A_6 \times B_6$) | Task 5 ($R_1 + C_5$) | Task 4 (Write) | **$R_4$ Complete** |
+| **C7** | Task 7 ($A_7 \times B_7$) | Task 6 ($R_1 + C_6$) | Task 5 (Write) | **$R_5$ Complete** |
+| **C8** | — (Pipeline draining) | Task 7 ($R_1 + C_7$) | Task 6 (Write) | **$R_6$ Complete** |
+| **C9** | — | — | Task 7 (Write) | **$R_7$ Complete** |
+
+## Speedup and Efficiency Derivation
+
+Let $k$ be the number of pipeline segments, and $n$ be the number of tasks.
+
+1. **Pipelined Execution Time ($T_p$)**:
+   - The first task $T_1$ requires $k$ clock cycles to fill the pipeline.
+   - Each of the remaining $n - 1$ tasks exits at the rate of **1 task per clock cycle**.
+   $$
+   T_p = k + (n - 1) = k + n - 1 \text{ clock cycles}
+   $$
+
+2. **Unpipelined (Non-pipelined) Sequential Execution Time ($T_n$)**:
+   - Each task completes all $k$ steps sequentially before the next task begins:
+   $$
+   T_n = n \times k \text{ clock cycles}
+   $$
+
+3. **Speedup ($S_k$)**:
+   $$
+   S_k = \frac{T_n}{T_p} = \frac{n \cdot k}{k + n - 1}
+   $$
+   - **Worked Case**: For $k = 3$ segments and $n = 7$ tasks:
+     $$
+     T_p = 3 + 7 - 1 = 9 \text{ cycles} \quad \text{vs.} \quad T_n = 7 \times 3 = 21 \text{ cycles}
+     $$
+     $$
+     S_3 = \frac{21}{9} = 2.33x
+     $$
+   - **Asymptotic Limit**: As $n \to \infty$, $\lim_{n \to \infty} S_k = k$. The maximum theoretical speedup equals the number of pipeline segments!
+
+4. **Pipeline Efficiency ($E_k$)**:
+   $$
+   E_k = \frac{S_k}{k} = \frac{n}{k + n - 1}
+   $$
+
+## Space-Time Diagram: Tasks T1 to T6 on a 4-Segment Pipeline
+
+A **space-time diagram** plots segment utilization (vertical axis) against discrete clock cycles (horizontal axis):
+
+<Diagram type="pipeline-spacetime" caption="Space-time diagram of 6 tasks on a 4-segment pipeline (9 total cycles)." />
+
+- Segments $k = 4$, tasks $n = 6$.
+- Total execution time: $T_p = 4 + 6 - 1 = 9$ clock cycles.
+- Unpipelined time: $T_n = 6 \times 4 = 24$ clock cycles.
+- Speedup: $S_4 = 24 / 9 = 2.67x$.
+
+## Interactive Pipeline Space-Time Simulator
+
+Experiment with arbitrary segment and task counts using the live simulator below:
+
+<PipelineSimulator />

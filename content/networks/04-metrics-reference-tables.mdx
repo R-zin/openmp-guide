@@ -1,0 +1,58 @@
+---
+id: 04-metrics-reference-tables
+slug: 04-metrics-reference-tables
+technology: networks
+order: 4
+title: "Interconnection Metrics Reference Tables"
+description: "Comprehensive reference metrics for Static and Dynamic networks with exam ambiguity watch-outs."
+readingTimeMinutes: 10
+sections:
+  - id: static-metrics-table
+    title: "Static Topologies Metrics Reference"
+    level: 2
+  - id: dynamic-metrics-table
+    title: "Dynamic Networks Reference (Crossbar, Omega)"
+    level: 2
+  - id: watch-out-tree
+    title: "Watch Out: Binary Tree Diameter Ambiguity"
+    level: 2
+---
+
+## Static Topologies Metrics Reference
+
+The following master reference table compiles the fundamental graph-theoretic measures for all static networks in the CSS 311 syllabus. In this table, $p$ denotes the total number of processing nodes.
+
+| Network Topology | Diameter | Bisection Width | Node Degree (Max) | Network Cost (Links) | Scalability Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Completely Connected** | $1$ | $\frac{p^2}{4}$ | $p - 1$ | $\frac{p(p-1)}{2}$ | Non-scalable ($O(p^2)$ links) |
+| **Star Network** | $2$ | $1$ | $p - 1$ (hub) | $p - 1$ | Non-scalable ($B_w = 1$) |
+| **Linear Array (1D)** | $p - 1$ | $1$ | $2$ | $p - 1$ | Poor latency & bandwidth |
+| **Ring ($|C| = p$)** | $\lfloor \frac{p}{2} \rfloor$ | $2$ | $2$ | $p$ | Constant degree, poor latency |
+| **2-D Mesh (no wrap)** | $2(\sqrt{p} - 1)$ | $\sqrt{p}$ | $4$ | $2(p - \sqrt{p})$ | Scalable cost, moderate latency |
+| **2-D Torus (wraparound)** | $2 \lfloor \frac{\sqrt{p}}{2} \rfloor$ | $2\sqrt{p}$ | $4$ | $2p$ | Regular degree 4, balanced |
+| **$d$-dim Mesh ($p=k^d$)** | $d(k - 1) = d \cdot p^{1/d}$ | $p^{1 - 1/d}$ | $2d$ | $d(p - p^{1 - 1/d})$ | High-dim scalability |
+| **Hypercube ($p = 2^d$)** | $\log_2 p$ | $\frac{p}{2}$ | $\log_2 p$ | $\frac{p \log_2 p}{2}$ | Logarithmic latency, $\Omega(p)$ bandwidth |
+| **Complete Binary Tree** | $2 \log_2(\frac{p+1}{2})$ | $1$ | $3$ | $p - 1$ | Log latency, severe bottleneck |
+| **Wraparound $k$-ary $d$-cube** | $d \lfloor \frac{k}{2} \rfloor$ | $2k^{d-1}$ | $2d$ | $d \cdot p$ | Highly scalable general family |
+
+## Dynamic Networks Reference (Crossbar, Omega, Tree)
+
+Dynamic networks deploy dedicated switches between processors and memory. Cost is measured in number of switching elements or internal crosspoints.
+
+| Dynamic Network Type | Diameter | Bisection Width | Switch Cost | Routing Complexity |
+| :--- | :--- | :--- | :--- | :--- |
+| **Crossbar Switch** | $1$ | $p$ | $p^2$ crosspoints | Non-blocking, single stage |
+| **Omega Network** | $\log_2 p$ | $\frac{p}{2}$ | $\frac{p}{2} \log_2 p$ switches | Self-routing via destination bits |
+| **Dynamic Binary Tree** | $2 \log_2 p$ | $1$ | $p - 1$ switches | Simple hierarchical routing |
+
+<Diagram type="crossbar-omega" caption="4x4 Single-stage crossbar vs 8-input 3-stage Omega multistage network." />
+
+## Watch Out: Binary Tree Diameter Ambiguity
+
+<Callout type="warning" title="Watch Out: Binary Tree Diameter Ambiguity">
+Lecture slides and textbook sources occasionally cite two different formulas for the diameter of a binary tree:
+1. **$D = 2 \log_2 p$**: This formula assumes that **processing nodes reside only at the $p$ leaves** of the tree, and internal nodes are pure routing switches. To traverse from one leaf, up through the root, and down to another leaf takes $2 \log_2 p$ hops.
+2. **$D = 2 \log_2(\frac{p+1}{2})$**: This formula applies when **every node in the complete tree is a processor** (total nodes $p = 2^k - 1$). The height of the tree is $\log_2(\frac{p+1}{2})$, so the maximum path between two leaves via the root is $2 \log_2(\frac{p+1}{2})$.
+
+**Exam Rule**: When asked in the CSS 311 exam, state the assumption clearly! If processors are at leaves, use $2 \log_2 p$. If every tree node is a processor, use $2 \log_2(\frac{p+1}{2})$.
+</Callout>

@@ -1,0 +1,141 @@
+---
+id: 03-key-concepts
+slug: 03-key-concepts
+technology: performance
+order: 3
+title: "Key Performance Concepts: Scalability, Amdahl, and Gustafson"
+description: "Rigorous derivations of Speedup, Efficiency, Amdahl's Law (strong scaling), Gustafson's Law (weak scaling), and the Karp-Flatt metric."
+readingTimeMinutes: 18
+sections:
+  - id: fundamental-metrics
+    title: "Fundamental Metrics: Latency, Overhead, Speedup, Efficiency"
+    level: 2
+  - id: amdahls-law
+    title: "Amdahl's Law (Strong Scaling)"
+    level: 2
+  - id: gustafsons-law
+    title: "Gustafson's Law (Weak Scaling)"
+    level: 2
+  - id: strong-vs-weak
+    title: "Strong Scaling vs. Weak Scaling"
+    level: 2
+  - id: karp-flatt-metric
+    title: "The Karp-Flatt Metric (Detecting Inefficiencies)"
+    level: 2
+  - id: interactive-amdahl
+    title: "Interactive Scaling Calculator"
+    level: 2
+---
+
+## Fundamental Metrics: Latency, Overhead, Speedup, Efficiency
+
+Let $T_s$ (or $T_1$) be the execution time of the best sequential algorithm on 1 processor, and $T_p$ be the parallel execution time on $p$ processors.
+
+1. **Speedup ($S$)**: The ratio of sequential execution time to parallel execution time:
+   $$
+   S(p) = \frac{T_s}{T_p}
+   $$
+   - Ideal linear speedup: $S(p) = p$.
+   - Superlinear speedup ($S(p) > p$) occasionally occurs when aggregate cache memory across $p$ nodes suddenly fits the entire dataset, eliminating DRAM misses.
+
+2. **Efficiency ($E$)**: The fraction of time that processors are spent in useful computational work:
+   $$
+   E(p) = \frac{S(p)}{p} = \frac{T_s}{p \cdot T_p}
+   $$
+   - Ideal efficiency: $E = 1.0$ (or $100\%$). In practice, $E < 1.0$ due to overhead.
+
+3. **Total Parallel Overhead ($T_o$)**: The total excess processor-time squandered on non-computational tasks:
+   $$
+   T_o = p \cdot T_p - T_s
+   $$
+   Overhead includes inter-process communication, synchronization barriers, idle wait-time, and OS system calls.
+
+<Diagram type="scaling-curves" caption="Strong scaling (Amdahl asymptote) vs Weak scaling (Gustafson linear scaling)." />
+
+## Amdahl's Law (Strong Scaling)
+
+**Amdahl's Law** models speedup when the **problem size is fixed** and the number of processors increases (**strong scaling**).
+
+### Derivation
+Let the sequential runtime be normalized to $1$. Suppose a fraction $s$ ($0 \le s \le 1$) of the program is inherently sequential and cannot be parallelized. The remaining fraction $p_{par} = 1 - s$ can be accelerated across $N$ parallel processors.
+
+The parallel execution time on $N$ processors is:
+
+$$
+T(N) = s + \frac{1 - s}{N} = (1 - p_{par}) + \frac{p_{par}}{N}
+$$
+
+The theoretical speedup $S(N)$ is given by:
+
+$$
+S(N) = \frac{T(1)}{T(N)} = \frac{1}{(1 - p_{par}) + \frac{p_{par}}{N}}
+$$
+
+### Asymptotic Limit
+As the processor count approaches infinity ($N \to \infty$):
+
+$$
+\lim_{N \to \infty} S(N) = \frac{1}{1 - p_{par}} = \frac{1}{s}
+$$
+
+### Worked Example
+Suppose a climate simulation spends $90\%$ of its time in a parallel PDE solver and $10\%$ in serial initialization and I/O ($s = 0.10, p_{par} = 0.90$):
+- On $N = 4$ cores: $S(4) = \frac{1}{0.10 + 0.90 / 4} = \frac{1}{0.10 + 0.225} = \frac{1}{0.325} \approx 3.08x$.
+- On $N = 16$ cores: $S(16) = \frac{1}{0.10 + 0.90 / 16} = \frac{1}{0.10 + 0.05625} \approx 6.4x$.
+- On $N = 1,000,000$ cores: $S(\infty) = \frac{1}{0.10} = 10x$. **Speedup can never exceed 10x!**
+
+## Gustafson's Law (Weak Scaling)
+
+In 1988, John Gustafson observed that in scientific computing, scientists do not run a fixed, tiny problem on 10,000 processors. Instead, as more processors become available, scientists **scale up the problem size** (e.g. refining 3-D grid resolution) to fill memory (**weak scaling**).
+
+### Derivation
+Let the parallel execution time on $N$ processors with an enlarged dataset be normalized to $1$:
+- Let $s$ be the fraction of time spent in serial code on the parallel machine.
+- Let $p_{par} = 1 - s$ be the fraction spent in parallel code.
+
+On a single sequential processor, running that enlarged workload would require executing the serial portion once, plus executing all $N$ parallel shares sequentially:
+
+$$
+T_{seq} = s + p_{par} \times N = s + (1 - s)N
+$$
+
+Thus, the **scaled speedup** (Gustafson's Law) is:
+
+$$
+S(N) = \frac{T_{seq}}{T_{par}} = \frac{s + (1 - s)N}{1} = N - s(N - 1)
+$$
+
+### Worked Example
+For the same $s = 0.10$ serial fraction, on $N = 64$ cores under Gustafson's law:
+$$
+S(64) = 64 - 0.10(64 - 1) = 64 - 6.3 = 57.7x \text{ speedup!}
+$$
+
+## Strong Scaling vs. Weak Scaling
+
+| Feature | Strong Scaling (Amdahl) | Weak Scaling (Gustafson) |
+| :--- | :--- | :--- |
+| **Problem Size** | Fixed constant size | Grows proportionally with $N$ |
+| **Work per Processor** | Decreases as $1/N$ | Remains constant |
+| **Primary Goal** | Minimize time-to-solution for a fixed task | Maximize simulation resolution in constant time |
+| **Limiting Factor** | Inherent serial fraction $s$ | Memory bandwidth and communication scale |
+
+## The Karp-Flatt Metric (Detecting Inefficiencies)
+
+When empirical speedup deviates from linear expectations, how can we determine whether the slowdown is caused by an inherently large serial code fraction or by parallel communication overhead?
+
+Alan H. Karp and Horace P. Flatt defined the **experimentally determined serial fraction** ($e$):
+
+$$
+e = \frac{\frac{1}{S(p)} - \frac{1}{p}}{1 - \frac{1}{p}}
+$$
+
+Where $p$ is processor count and $S(p)$ is measured empirical speedup.
+
+### Diagnostic Rule
+- If the calculated value of $e$ **remains constant** as $p$ increases, the performance limitation is caused by the program's **inherent serial code fraction** $s$.
+- If $e$ **increases monotonically** as $p$ increases, the performance degradation is caused by **parallel overheads** (communication latencies, barrier contention, load imbalance) scaling with cluster size!
+
+## Interactive Scaling Calculator
+
+<AmdahlCalculator />

@@ -1,0 +1,306 @@
+{
+  "id": "theory-mock-final",
+  "title": "CSS 311: End-Semester Theory Mock Paper (Parts C, D, E)",
+  "totalMarks": 50,
+  "durationMinutes": 120,
+  "instructions": [
+    "Answer all three sections: Section 1 (Interconnection Networks), Section 2 (Vector Processors), and Section 3 (Performance Tools).",
+    "Show all intermediate derivations, formulas, and metric calculations.",
+    "Draw clear schematics/diagrams where requested.",
+    "Marks for each question and sub-question are indicated on the right."
+  ],
+  "sections": [
+    {
+      "title": "Section 1: Interconnection Networks (Part C)",
+      "description": "Graph-theoretic measures, topology metrics, E-cube routing, and graph embedding.",
+      "questions": [
+        {
+          "id": "th-q1",
+          "number": "1(a)",
+          "part": "Part C: Interconnection Networks",
+          "marks": 6,
+          "question": "An interconnection network is structured as a 4-ary 3-cube with wraparound links. (i) Calculate the total number of processors p, diameter D, node degree d, and bisection width B_w. (ii) Calculate the total number of physical links |C| and verify your result using the Handshaking Lemma (sum of degrees / 2).",
+          "solution": [
+            "Parameters: k = 4, d = 3 (dimension).",
+            "(i) Total processors: p = k^d = 4^3 = 64 nodes.",
+            "Diameter: D = d * floor(k / 2) = 3 * floor(4 / 2) = 3 * 2 = 6 hops.",
+            "Node degree: d_node = 2 * d = 2 * 3 = 6 (regular graph across all 64 nodes).",
+            "Bisection width: B_w = 2 * k^(d - 1) = 2 * 4^(3 - 1) = 2 * 16 = 32 links.",
+            "(ii) Total links: |C| = d * p = 3 * 64 = 192 links.",
+            "Verification via Handshaking Lemma: Total links = (1/2) * sum_{v} deg(v) = (64 * 6) / 2 = 384 / 2 = 192 links (Matches exactly!)."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Correct calculation of p, D, degree, and B_w with formulas",
+              "marks": 4
+            },
+            {
+              "criterion": "Total links calculation and Handshaking Lemma verification",
+              "marks": 2
+            }
+          ]
+        },
+        {
+          "id": "th-q2",
+          "number": "1(b)",
+          "part": "Part C: Interconnection Networks",
+          "marks": 6,
+          "question": "In a 4-dimensional hypercube, a message must be routed from node S = 0101_2 to node D = 1110_2 using dimension-order (E-cube) routing. (i) Calculate the direction vector R = S XOR D and state the Hamming distance. (ii) List the complete sequence of intermediate nodes, dimensions traversed, and bits flipped. (iii) Explain why E-cube routing is guaranteed to be deadlock-free.",
+          "solution": [
+            "(i) Direction vector: R = S XOR D = 0101_2 XOR 1110_2 = 1011_2. Hamming distance H(S, D) = 3 hops (bits 0, 1, and 3 differ; bit 2 is 1 in both).",
+            "(ii) Hop-by-hop traversal (resolving differing dimensions in increasing order 0, 1, 3):",
+            "  - Hop 0: Current node = 0101_2.",
+            "  - Hop 1 (Dimension 0): Flip bit 0 of 0101 -> 0100_2.",
+            "  - Hop 2 (Dimension 1): Flip bit 1 of 0100 -> 0110_2.",
+            "  - Hop 3 (Dimension 3): Flip bit 3 of 0110 -> 1110_2 (Destination reached!).",
+            "  - Complete Path: 0101 -> 0100 -> 0110 -> 1110.",
+            "(iii) Deadlock-freedom: Channels are acquired strictly in monotonic order of dimension (0 -> 1 -> 3). Because a channel in dimension i never waits for a channel in dimension j < i, the channel dependency graph is a Directed Acyclic Graph (DAG), which by Dally and Seitz's theorem guarantees absolute freedom from deadlock."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Correct XOR vector and Hamming distance",
+              "marks": 2
+            },
+            {
+              "criterion": "Accurate hop-by-hop path sequence and bit flips",
+              "marks": 2
+            },
+            {
+              "criterion": "Rigorous proof of deadlock freedom (DAG / monotonic dimension ordering)",
+              "marks": 2
+            }
+          ]
+        },
+        {
+          "id": "th-q3",
+          "number": "1(c)",
+          "part": "Part C: Interconnection Networks",
+          "marks": 5,
+          "question": "(i) Define Dilation, Congestion, and Expansion in graph embedding. (ii) Show how a 4x4 wraparound mesh can be embedded into a 4-D hypercube using 2-bit Reflected Gray Codes such that Dilation = 1, Congestion = 1, and Expansion = 1.",
+          "solution": [
+            "(i) Definitions:",
+            "  - Dilation: Maximum length of a path in host graph G' corresponding to any single edge in guest graph G.",
+            "  - Congestion: Maximum number of guest edges that share any single physical link in host graph G'.",
+            "  - Expansion: Ratio of host nodes to guest nodes: |V'| / |V|.",
+            "(ii) Embedding 4x4 mesh into 4-D hypercube:",
+            "  - 2-bit Gray code sequence: G(0)=00, G(1)=01, G(2)=11, G(3)=10.",
+            "  - Mapping function: For mesh node (r, c) with 0 <= r, c < 4, host node = G(r, 2) || G(c, 2).",
+            "  - Example: Node (1, 1) maps to G(1, 2) || G(1, 2) = 0101_2.",
+            "  - Its four mesh neighbors (0,1), (2,1), (1,0), (1,2) map to 0001, 1101, 0100, and 0111.",
+            "  - Each neighbor differs in exactly 1 bit, corresponding to an immediate physical link in the hypercube.",
+            "  - Hence, Dilation = 1, Congestion = 1, Expansion = 16 / 16 = 1."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Accurate definitions of Dilation, Congestion, Expansion",
+              "marks": 2
+            },
+            {
+              "criterion": "Concatenated Gray code mapping function and neighbor verification",
+              "marks": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Section 2: Vector Processors (Part D)",
+      "description": "Pipelining speedup, VMIPS architecture, strip-mining, and memory interleaving.",
+      "questions": [
+        {
+          "id": "th-q4",
+          "number": "2(a)",
+          "part": "Part D: Vector Processors",
+          "marks": 6,
+          "question": "A 4-segment pipelined arithmetic execution unit evaluates the expression R_i = A_i * B_i + C_i for n = 100 independent tasks. The clock period of the pipeline is 5 ns. (i) Derive the formula for pipelined execution time T_p and unpipelined execution time T_n. (ii) Calculate total cycles, total execution time in nanoseconds, and speedup for n = 100. (iii) What is the theoretical speedup as n -> infinity?",
+          "solution": [
+            "(i) Formulas:",
+            "  - First task requires k clock cycles to exit the pipeline. Remaining n - 1 tasks exit at 1 task per cycle.",
+            "  - Pipelined cycles: T_p = k + n - 1.",
+            "  - Unpipelined cycles: T_n = n * k.",
+            "(ii) For k = 4, n = 100, t_clock = 5 ns:",
+            "  - Pipelined cycles: T_p = 4 + 100 - 1 = 103 cycles.",
+            "  - Pipelined time: 103 * 5 ns = 515 ns.",
+            "  - Unpipelined cycles: T_n = 100 * 4 = 400 cycles.",
+            "  - Unpipelined time: 400 * 5 ns = 2,000 ns.",
+            "  - Speedup: S_4 = 400 / 103 = 3.88x (or 2000 ns / 515 ns = 3.88x).",
+            "(iii) Theoretical limit: lim_{n -> inf} (n * k) / (k + n - 1) = k = 4.00x."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Derivation of T_p and T_n formulas",
+              "marks": 2
+            },
+            {
+              "criterion": "Correct calculation of cycles, nanoseconds, and speedup (3.88x)",
+              "marks": 3
+            },
+            {
+              "criterion": "Correct asymptotic limit (k = 4x)",
+              "marks": 1
+            }
+          ]
+        },
+        {
+          "id": "th-q5",
+          "number": "2(b)",
+          "part": "Part D: Vector Processors",
+          "marks": 6,
+          "question": "(i) Explain the strip-mining algorithm in vector architectures. (ii) If an array of n = 180 elements is processed on a vector architecture with Maximum Vector Length MVL = 64, calculate the total number of strip passes and the exact VLEN value for each pass. (iii) Write the corresponding VMIPS vector loop structure.",
+          "solution": [
+            "(i) Strip-mining: When vector length n exceeds the physical hardware capacity MVL of a vector register, the loop is split into chunks of size <= MVL. The first pass handles the remainder n % MVL, and all subsequent passes process exactly MVL elements.",
+            "(ii) For n = 180, MVL = 64:",
+            "  - Total passes = ceil(180 / 64) = 3 passes.",
+            "  - Remainder = 180 % 64 = 52 elements.",
+            "  - Pass 1: VLEN = 52 elements (indices 0 to 51).",
+            "  - Pass 2: VLEN = 64 elements (indices 52 to 115).",
+            "  - Pass 3: VLEN = 64 elements (indices 116 to 179).",
+            "(iii) VMIPS loop structure:",
+            "    LI    R1, 52        ; Remainder first",
+            "    MTC1  VLEN, R1",
+            "LOOP:",
+            "    LV    V1, Ra",
+            "    LV    V2, Rb",
+            "    ADDV  V3, V1, V2",
+            "    SV    V3, Rc",
+            "    SLL   R2, R1, 3     ; Offset = VLEN * 8 bytes",
+            "    DADDU Ra, Ra, R2",
+            "    DADDU Rb, Rb, R2",
+            "    DADDU Rc, Rc, R2",
+            "    DSUBU R_rem, R_rem, R1",
+            "    LI    R1, 64        ; Remaining strips = MVL",
+            "    MTC1  VLEN, R1",
+            "    BGTZ  R_rem, LOOP"
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Strip-mining conceptual definition",
+              "marks": 2
+            },
+            {
+              "criterion": "Correct pass count (3) and VLEN values (52, 64, 64)",
+              "marks": 2
+            },
+            {
+              "criterion": "Valid VMIPS assembly control flow",
+              "marks": 2
+            }
+          ]
+        },
+        {
+          "id": "th-q6",
+          "number": "2(c)",
+          "part": "Part D: Vector Processors",
+          "marks": 5,
+          "question": "(i) Contrast Array Processors (SIMD in space) with Vector Processors (SIMD in time). (ii) Explain why vector processors use memory interleaving and state when bank conflicts occur.",
+          "solution": [
+            "(i) Array vs Vector:",
+            "  - Array Processors (SIMD in Space): Replicates N independent ALUs across chip area. All N ALUs execute the same instruction simultaneously during the same clock cycle.",
+            "  - Vector Processors (SIMD in Time): Uses a single (or few) deeply pipelined ALUs. Elements stream through pipeline stages sequentially across successive clock cycles.",
+            "(ii) Memory Interleaving & Bank Conflicts:",
+            "  - Pipelined vector functional units require 1-2 words per clock cycle. Standard single-bank DRAM is too slow (t_cycle > 1).",
+            "  - Memory interleaving divides memory into M independent banks. Address A maps to bank A % M.",
+            "  - Bank conflicts occur if a strided access hits the same bank before its recovery time t_cycle has elapsed (whenever gcd(stride, M) > 1). Odd strides prevent conflicts."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Rigorous space vs time comparison",
+              "marks": 2.5
+            },
+            {
+              "criterion": "Explanation of interleaving and bank conflict condition gcd(s, M) > 1",
+              "marks": 2.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Section 3: Performance Tools and Analysis (Part E)",
+      "description": "Amdahl vs Gustafson, Karp-Flatt metric, profiling vs tracing, and bottleneck diagnosis.",
+      "questions": [
+        {
+          "id": "th-q7",
+          "number": "3(a)",
+          "part": "Part E: Performance Tools",
+          "marks": 6,
+          "question": "(i) Derive Amdahl's Law for strong scaling and Gustafson's Law for weak scaling. (ii) An algorithm has a serial fraction s = 0.08 (8%). Calculate the theoretical speedup on 32 processors under Amdahl's Law and under Gustafson's Law. Explain the physical reason for the discrepancy.",
+          "solution": [
+            "(i) Derivations:",
+            "  - Amdahl's Law (Strong Scaling): Fixed problem size. Serial fraction s, parallel fraction 1 - s. T(N) = s + (1 - s)/N. S(N) = 1 / [s + (1 - s)/N].",
+            "  - Gustafson's Law (Weak Scaling): Problem size scales with N. Parallel execution time normalized to 1. T_seq = s + (1 - s)N. S(N) = N - s(N - 1).",
+            "(ii) Numerical calculation for s = 0.08, N = 32:",
+            "  - Amdahl: S(32) = 1 / [0.08 + (0.92 / 32)] = 1 / [0.08 + 0.02875] = 1 / 0.10875 = 9.195x.",
+            "  - Gustafson: S(32) = 32 - 0.08 * (32 - 1) = 32 - 0.08 * 31 = 32 - 2.48 = 29.52x.",
+            "(iii) Physical reason: Amdahl assumes a fixed workload where parallel portions shrink to zero while the serial 8% remains constant. Gustafson assumes workload grows proportionally with processor count, so the parallel work expands while the serial fraction remains a small constant time overhead."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Mathematical derivation of both laws",
+              "marks": 2
+            },
+            {
+              "criterion": "Correct numerical speedups (Amdahl = 9.20x, Gustafson = 29.52x)",
+              "marks": 2
+            },
+            {
+              "criterion": "Physical explanation of fixed vs scaled workload",
+              "marks": 2
+            }
+          ]
+        },
+        {
+          "id": "th-q8",
+          "number": "3(b)",
+          "part": "Part E: Performance Tools",
+          "marks": 5,
+          "question": "A parallel benchmark yields the following speedups on a cluster: on p = 4, S = 3.6; on p = 8, S = 6.4; on p = 16, S = 9.8. (i) Calculate the Karp-Flatt metric e for p = 4, 8, and 16. (ii) Based on the trend of e, diagnose whether the performance limitation is caused by an inherent serial code bottleneck or parallel communication overhead.",
+          "solution": [
+            "(i) Karp-Flatt formula: e = (1/S - 1/p) / (1 - 1/p).",
+            "  - For p = 4, S = 3.6: 1/S = 0.2778, 1/p = 0.2500. e = (0.2778 - 0.2500) / (1 - 0.25) = 0.0278 / 0.75 = 0.0371 (3.71%).",
+            "  - For p = 8, S = 6.4: 1/S = 0.15625, 1/p = 0.1250. e = (0.15625 - 0.1250) / (1 - 0.125) = 0.03125 / 0.875 = 0.0357 (3.57%).",
+            "  - For p = 16, S = 9.8: 1/S = 0.10204, 1/p = 0.06250. e = (0.10204 - 0.06250) / (1 - 0.0625) = 0.03954 / 0.9375 = 0.0422 (4.22%).",
+            "(ii) Diagnosis: Value e remains roughly constant around 3.6% - 4.2% up to 8 processors, indicating an inherent serial fraction of approximately 3.7%. At p = 16, e begins rising (from 0.0357 to 0.0422), signaling that parallel communication and synchronization overheads are starting to compound."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Calculation of e for p = 4, 8, 16",
+              "marks": 3
+            },
+            {
+              "criterion": "Accurate diagnostic interpretation of constant vs increasing e",
+              "marks": 2
+            }
+          ]
+        },
+        {
+          "id": "th-q9",
+          "number": "3(c)",
+          "part": "Part E: Performance Tools",
+          "marks": 5,
+          "question": "(i) Contrast Profiling and Tracing across data volume, temporal visibility, and overhead. (ii) In an MPI application, Rank 0 takes 50 ms to compute a boundary region while Ranks 1-3 take 20 ms. What wait-state does Scalasca detect at the subsequent MPI_Recv? How does a timeline trace prove causality where a flat profile fails?",
+          "solution": [
+            "(i) Profiling vs Tracing:",
+            "  - Data Volume: Profiling file size is compact and constant (KB-MB); Tracing file size scales linearly with time and event frequency (GB-TB).",
+            "  - Temporal Visibility: Profiling aggregates time across the whole run (discards timeline); Tracing preserves full chronologically ordered event streams.",
+            "  - Overhead: Profiling overhead is low (1-5%); Tracing overhead is moderate-to-high (5-30%+).",
+            "(ii) Wait-state diagnosis:",
+            "  - Scalasca detects a 'Late Sender' wait-state on Ranks 1-3.",
+            "  - Ranks 1-3 post MPI_Recv at t = 20 ms and sit idle for 30 ms waiting for Rank 0 to finish computing and post MPI_Send at t = 50 ms.",
+            "  - Causality proof: A flat profile merely reports 30 ms spent in MPI_Recv (which looks like a slow receive); a timeline trace displays the timestamps of both sender and receiver, proving that the delay was actually caused by Rank 0's delayed computation."
+          ],
+          "markingRubric": [
+            {
+              "criterion": "Profiling vs Tracing comparative matrix",
+              "marks": 2.5
+            },
+            {
+              "criterion": "Late Sender identification and timeline causality explanation",
+              "marks": 2.5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -5,63 +5,53 @@ import re
 
 search_items = []
 
-# 1. Parse MPI MDX files
-mpi_files = sorted(glob.glob('content/mpi/*.mdx'))
-for f in mpi_files:
-    content = open(f).read()
-    slug = os.path.basename(f).replace('.mdx', '')
-    title_match = re.search(r'title:\s*(.*)', content)
-    desc_match = re.search(r'description:\s*(.*)', content)
-    title = title_match.group(1).strip() if title_match else slug
-    desc = desc_match.group(1).strip() if desc_match else ''
+modules = [
+    ('mpi', 'MPI Topic', '/mpi'),
+    ('openmp', 'OpenMP Topic', '/openmp'),
+    ('networks', 'Interconnection Networks', '/networks'),
+    ('vectors', 'Vector Processors', '/vectors'),
+    ('performance', 'Performance Tools', '/performance')
+]
 
+for mod, category, base_path in modules:
+    files = sorted(glob.glob(f'content/{mod}/*.mdx'))
+    for f in files:
+        content = open(f).read()
+        slug = os.path.basename(f).replace('.mdx', '')
+        title_match = re.search(r'title:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+        desc_match = re.search(r'description:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+        title = title_match.group(1).strip() if title_match else slug
+        desc = desc_match.group(1).strip() if desc_match else ''
+
+        search_items.append({
+            'id': f'{mod}-{slug}',
+            'title': title,
+            'category': category,
+            'path': f'{base_path}/{slug}/',
+            'keywords': f'{mod} {slug} {title.lower()} {desc.lower()}',
+            'snippet': desc
+        })
+
+# Practice Questions
+practice_modules = [
+    ('mpi', 'MPI Solved Questions (40+ Problems)', '/practice/mpi/', 'mpi questions practice solved conceptual output bug code', '42+ solved questions with step-by-step answers across 5 question categories.'),
+    ('openmp', 'OpenMP Solved Questions (40+ Problems)', '/practice/openmp/', 'openmp questions practice solved conceptual output bug code race condition', '42+ solved questions with step-by-step answers across 5 question categories.'),
+    ('networks', 'Interconnection Networks Solved Questions (25+ Problems)', '/practice/networks/', 'networks topology routing e-cube hypercube mesh torus bisection diameter dilation congestion', '25+ solved questions covering network metrics, E-cube routing, and graph embeddings.'),
+    ('vectors', 'Vector Processors Solved Questions (25+ Problems)', '/practice/vectors/', 'vector processors vmips pipelining strip-mining chaining convoy throughput speedup simd', '25+ solved questions covering VMIPS assembly, strip-mining, pipeline timing, and vector speedup.'),
+    ('performance', 'Performance Analysis & Tools Solved Questions (25+ Problems)', '/practice/performance/', 'performance tools amdahl gustafson karp-flatt score-p scalasca mpiP pmpi tracing profiling otf2', '25+ solved questions on bottleneck diagnosis, scaling laws, metrics, and HPC tool ecosystems.')
+]
+
+for pid, title, path, keywords, snippet in practice_modules:
     search_items.append({
-        'id': f'mpi-{slug}',
+        'id': f'practice-{pid}',
         'title': title,
-        'category': 'MPI Topic',
-        'path': f'/mpi/{slug}/',
-        'keywords': f'mpi {slug} {title.lower()} {desc.lower()}',
-        'snippet': desc
+        'category': 'Practice',
+        'path': path,
+        'keywords': keywords,
+        'snippet': snippet
     })
 
-# 2. Parse OpenMP MDX files
-omp_files = sorted(glob.glob('content/openmp/*.mdx'))
-for f in omp_files:
-    content = open(f).read()
-    slug = os.path.basename(f).replace('.mdx', '')
-    title_match = re.search(r'title:\s*(.*)', content)
-    desc_match = re.search(r'description:\s*(.*)', content)
-    title = title_match.group(1).strip() if title_match else slug
-    desc = desc_match.group(1).strip() if desc_match else ''
-
-    search_items.append({
-        'id': f'openmp-{slug}',
-        'title': title,
-        'category': 'OpenMP Topic',
-        'path': f'/openmp/{slug}/',
-        'keywords': f'openmp omp {slug} {title.lower()} {desc.lower()}',
-        'snippet': desc
-    })
-
-# 3. Add Practice & Mock Exams
-search_items.append({
-    'id': 'practice-mpi',
-    'title': 'MPI Solved Questions (40+ Problems)',
-    'category': 'Practice',
-    'path': '/practice/mpi/',
-    'keywords': 'mpi questions practice solved conceptual output bug code',
-    'snippet': '42+ solved questions with step-by-step answers across 5 question categories.'
-})
-
-search_items.append({
-    'id': 'practice-openmp',
-    'title': 'OpenMP Solved Questions (40+ Problems)',
-    'category': 'Practice',
-    'path': '/practice/openmp/',
-    'keywords': 'openmp questions practice solved conceptual output bug code race condition',
-    'snippet': '42+ solved questions with step-by-step answers across 5 question categories.'
-})
-
+# Mock Exams
 search_items.append({
     'id': 'mock-mpi',
     'title': 'Mock Lab Exam 1: MPI (3 Tasks, 50 Marks)',
@@ -81,15 +71,36 @@ search_items.append({
 })
 
 search_items.append({
+    'id': 'mock-theory',
+    'title': 'End-Semester Theory Mock Exam (5 Questions, 50 Marks, 120 Mins)',
+    'category': 'Mock Exam',
+    'path': '/practice/mock-theory/',
+    'keywords': 'theory mock exam end-term css311 networks vectors mpi openmp performance 50 marks marking rubric model answer',
+    'snippet': 'Comprehensive 5-question end-semester theory exam with detailed marking rubric covering all syllabus units.'
+})
+
+# Formula Sheet
+search_items.append({
+    'id': 'formula-sheet',
+    'title': 'High-Yield Formula Sheet (Printable 1-Page Summary)',
+    'category': 'Revision Tools',
+    'path': '/practice/formulas/',
+    'keywords': 'formula sheet cheat sheet formulas amdahl gustafson karp-flatt cannon pipeline speedup network metrics edp',
+    'snippet': 'Complete reference cheat sheet for Amdahl, Gustafson, Karp-Flatt, Network Topologies, Pipeline speedup, and Cannon algorithm.'
+})
+
+# Flashcards
+search_items.append({
     'id': 'flashcards',
-    'title': 'Interactive Flashcard Revision Deck (65 Cards)',
+    'title': 'Interactive Flashcard Revision Deck (120+ Cards)',
     'category': 'Revision Tools',
     'path': '/flashcards/',
-    'keywords': 'flashcards revision terms definitions syntax pitfalls rules memory',
-    'snippet': 'Flip through 65 curated revision cards covering core definitions, directives, and traps.'
+    'keywords': 'flashcards revision terms definitions syntax pitfalls rules memory networks vectors performance mpi openmp',
+    'snippet': 'Flip through 123 curated revision cards covering core definitions, topologies, vector concepts, and performance metrics.'
 })
 
 with open('content/search-index.json', 'w') as f:
     json.dump(search_items, f, indent=2)
 
 print(f'Successfully generated content/search-index.json with {len(search_items)} indexed items')
+

@@ -1,0 +1,82 @@
+---
+id: 06-profiling
+slug: 06-profiling
+technology: performance
+order: 6
+title: "Profiling Types: Flat, Call-Graph, and Call-Path"
+description: "Aggregated performance measurement, flat profiles, call-graph profiles, CUBE call-path trees, and exclusive vs inclusive metrics."
+readingTimeMinutes: 14
+sections:
+  - id: what-is-profiling
+    title: "Definition of Profiling"
+    level: 2
+  - id: exclusive-vs-inclusive
+    title: "Exclusive Time vs. Inclusive Time"
+    level: 2
+  - id: types-of-profiling
+    title: "The Hierarchy of Profiling Types"
+    level: 2
+  - id: flat-profiling
+    title: "1. Flat Profiling"
+    level: 2
+  - id: call-graph-profiling
+    title: "2. Call-Graph Profiling"
+    level: 2
+  - id: call-path-profiling
+    title: "3. Call-Path Profiling (CUBE Trees)"
+    level: 2
+  - id: hardware-counter-profiling
+    title: "4. Hardware Counter Profiling (PAPI)"
+    level: 2
+---
+
+## Definition of Profiling
+
+**Profiling** is an aggregated performance measurement technique that summarizes performance data across the **entire program run**:
+- Rather than recording individual events chronologically over time, profiling accumulates summary metrics (total execution time, total calls, total cache misses, average duration) into compact statistical tables.
+- **Key Advantage**: Minimal storage footprint. Whether an application runs for 5 seconds or 5 days, the output profile size remains constant and compact (kilobytes to megabytes).
+- **Key Limitation**: Profiling discards temporal dynamics. It cannot tell you *when* during the execution a bottleneck occurred or how load balance fluctuated from iteration to iteration.
+
+## Exclusive Time vs. Inclusive Time
+
+A foundational distinction in profiling analysis:
+
+1. **Inclusive Time ($T_{incl}$)**: The total elapsed wall-clock time spent inside a function $F$, **including** all the time spent executing child functions called by $F$.
+   - For example, `main()` almost always has an inclusive time of nearly $100\%$.
+
+2. **Exclusive Time ($T_{excl}$)**: The time spent strictly executing code within the body of function $F$ itself, **excluding** all time spent inside any subroutines called by $F$:
+   $$
+   T_{excl}(F) = T_{incl}(F) - \sum_{C \in \text{Callees}(F)} T_{incl}(C)
+   $$
+
+### Worked Example
+Suppose function `solver()` runs for 100 seconds total. Inside `solver()`, it calls `matrix_multiply()` which takes 85 seconds, and `vector_norm()` which takes 10 seconds.
+- `solver()` **Inclusive Time** $= 100$ seconds.
+- `solver()` **Exclusive Time** $= 100 - (85 + 10) = 5$ seconds.
+- **Diagnostic Rule**: When optimizing code, engineers prioritize functions with the highest **exclusive time**, because that is where the CPU is actually executing arithmetic instructions!
+
+## The Hierarchy of Profiling Types
+
+<Diagram type="profiling-types" caption="Flat profile summary table vs contextual call-path tree." />
+
+## 1. Flat Profiling
+- Outputs a flat list of functions sorted by total exclusive time.
+- Gives a rapid, immediate answer to: *"Which single function consumed the most CPU time?"*
+- *Weakness*: Provides zero contextual information. If `MPI_Send` is at the top of the list, a flat profile cannot reveal which mathematical routines invoked `MPI_Send`.
+
+## 2. Call-Graph Profiling
+- Associates performance metrics with caller-callee pairs (e.g. `gprof`).
+- Shows who called whom and how many times, reporting total time spent along each call edge.
+- *Weakness*: Merges multiple call chains together into an aggregated graph, losing distinct context for recursive or multi-path invocations.
+
+## 3. Call-Path Profiling (CUBE Trees)
+- Preserves the **complete calling stack hierarchy** for every measured function invocation:
+  $$\text{main()} \to \text{timestep()} \to \text{solve()} \to \text{MPI\_Recv()}$$
+- Implemented in advanced HPC frameworks such as **Score-P** and viewed in **CUBE**.
+- Enables performance engineers to distinguish whether `MPI_Recv()` was slow when invoked by the boundary exchange kernel or when invoked by the file I/O routine!
+
+## 4. Hardware Counter Profiling (PAPI)
+- Uses the **Performance Application Programming Interface (PAPI)** to read on-chip CPU hardware event counters:
+  - `PAPI_L1_DCM`, `PAPI_L2_DCM`, `PAPI_L3_TCM`: L1, L2, and L3 data cache misses.
+  - `PAPI_TOT_CYC`, `PAPI_TOT_INS`: Total CPU clock cycles and instructions retired.
+  - Enables computation of **IPC (Instructions Per Cycle)** and memory stall ratios.

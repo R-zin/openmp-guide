@@ -1,0 +1,89 @@
+---
+id: 07-vmips-architecture
+slug: 07-vmips-architecture
+technology: vectors
+order: 7
+title: "VMIPS Architecture and Instruction Set"
+description: "VMIPS vector registers (64x64-bit), functional units, load/store unit, and comprehensive instruction set reference."
+readingTimeMinutes: 16
+sections:
+  - id: vmips-organization
+    title: "VMIPS Architectural Block Diagram"
+    level: 2
+  - id: vector-registers-detail
+    title: "Vector Register File & Port Reservation"
+    level: 2
+  - id: functional-units
+    title: "Pipelined Vector Functional Units"
+    level: 2
+  - id: instruction-reference
+    title: "VMIPS Instruction Set Reference Table"
+    level: 2
+  - id: chaining-and-hazards
+    title: "Vector Chaining and Structural Hazards"
+    level: 2
+  - id: watch-out-vmips
+    title: "Watch Out: Register Bit Capacity Clarification"
+    level: 2
+---
+
+## VMIPS Architectural Block Diagram
+
+**VMIPS** is the prototypical vector instruction set architecture designed for academic study (Hennessy and Patterson), modeled closely after the Cray-1:
+- Consists of a standard 32-bit scalar MIPS CPU augmented with a **Vector Processing Unit**.
+- Features 8 primary vector registers ($V_0$ to $V_7$).
+- Fully pipelined arithmetic execution units running concurrently.
+- Dedicated vector load/store unit interfacing with multi-bank memory.
+
+<Diagram type="vmips-architecture" caption="VMIPS architectural block diagram showing 8 vector registers, functional units, and memory banks." />
+
+## Vector Register File & Port Reservation
+
+The VMIPS vector register file contains:
+- **8 Vector Registers ($V_0$ through $V_7$)**: Each register holds **64 elements of 64 bits each** (512 bytes).
+- **Read / Write Ports**: To sustain concurrent operations (e.g. performing a vector multiply and a vector add at the same time), each vector register has multiple independent read ports and write ports.
+- **Control Registers**:
+  - `VLEN` (Vector Length): Holds the number of active elements ($1$ to $64$).
+  - `VSTR` (Vector Stride): Holds memory stride in bytes.
+  - `VMASK` (Vector Mask): 64-bit register used for conditional execution.
+
+## Pipelined Vector Functional Units
+
+All vector functional units in VMIPS are fully pipelined (they accept a new pair of operands every single clock cycle):
+1. **FP Add / Subtract**: Pipelined into 6 stages (latency $= 6$ cycles).
+2. **FP Multiply**: Pipelined into 7 stages (latency $= 7$ cycles).
+3. **FP Divide**: Pipelined into 20 stages (latency $= 20$ cycles, typically non-pipelined or partially pipelined).
+4. **Integer ALU / Logical**: Pipelined into 2 stages.
+5. **Vector Load / Store Unit**: Pipelined unit with address generators.
+
+## VMIPS Instruction Set Reference Table
+
+| VMIPS Instruction | Operands | Operation Performed | Architectural Description |
+| :--- | :--- | :--- | :--- |
+| `ADDV.D` | `Vd, Vs1, Vs2` | $Vd[i] = Vs1[i] + Vs2[i]$ | Vector-Vector Double FP Addition for $0 \le i < \text{VLEN}$ |
+| `SUBV.D` | `Vd, Vs1, Vs2` | $Vd[i] = Vs1[i] - Vs2[i]$ | Vector-Vector Double FP Subtraction |
+| `MULV.D` | `Vd, Vs1, Vs2` | $Vd[i] = Vs1[i] \times Vs2[i]$ | Vector-Vector Double FP Multiplication |
+| `DIVV.D` | `Vd, Vs1, Vs2` | $Vd[i] = Vs1[i] / Vs2[i]$ | Vector-Vector Double FP Division |
+| `ADDVS.D` | `Vd, Vs, Fs` | $Vd[i] = Vs[i] + Fs$ | Vector-Scalar Double FP Addition (broadcasts scalar $Fs$) |
+| `MULVS.D` | `Vd, Vs, Fs` | $Vd[i] = Vs[i] \times Fs$ | Vector-Scalar Double FP Multiplication |
+| `LV` | `Vd, Ra` | $Vd[i] = \text{Mem}[Ra + i \times \text{stride}]$ | Vector Load from base scalar address $Ra$ with stride |
+| `SV` | `Vs, Ra` | $\text{Mem}[Ra + i \times \text{stride}] = Vs[i]$ | Vector Store to base scalar address $Ra$ with stride |
+| `LVI` | `Vd, Ra, Vindex` | $Vd[i] = \text{Mem}[Ra + Vindex[i]]$ | Gather (Indexed Vector Load for sparse matrix) |
+| `SVI` | `Vs, Ra, Vindex` | $\text{Mem}[Ra + Vindex[i]] = Vs[i]$ | Scatter (Indexed Vector Store) |
+| `MTC1` | `VLEN, Rs` | $\text{VLEN} = Rs$ | Move from general-purpose register $Rs$ to control register |
+| `MFC1` | `Rd, VLEN` | $Rd = \text{VLEN}$ | Move from control register to general-purpose register |
+| `C.LT.D` | `Vs1, Vs2` | $\text{VMASK}[i] = (Vs1[i] < Vs2[i])$ | Vector Compare: sets corresponding bits in VMASK register |
+
+## Vector Chaining and Structural Hazards
+
+- **Without Chaining**: If instruction 2 depends on instruction 1 (`MULV.D V1, ...` followed by `ADDV.D V3, V1, V2`), instruction 2 must wait until all 64 elements of $V_1$ are written back into the register file.
+- **With Chaining**: The output of the multiplier pipeline is routed directly into the adder pipeline as soon as element 0 emerges. Both pipelines run concurrently in lock-step, reducing total execution time from $64 + 64 = 128$ cycles to approximately $64 + \text{latencies}$.
+
+## Watch Out: Register Bit Capacity Clarification
+
+<Callout type="warning" title="Watch Out: Register Bit Capacity Clarification">
+Beware of slide statements asserting that a vector register "holds 64-bit information".
+- In VMIPS, **each individual vector element is 64 bits** (standard IEEE 754 double precision).
+- Each register stores **64 such elements**.
+- Thus, the total capacity per register is **4,096 bits (512 bytes)**, and the entire 8-register bank stores $8 \times 512 = 4,096 \text{ bytes}$ of data!
+</Callout>

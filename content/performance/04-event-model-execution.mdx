@@ -1,0 +1,61 @@
+---
+id: 04-event-model-execution
+slug: 04-event-model-execution
+technology: performance
+order: 4
+title: "Event-Model Execution and Representation"
+description: "Modeling parallel execution as a discrete sequence of timestamped events across processes and threads."
+readingTimeMinutes: 10
+sections:
+  - id: discrete-event-model
+    title: "Execution as a Discrete Event Stream"
+    level: 2
+  - id: event-tuple-structure
+    title: "Structure of an Event Record"
+    level: 2
+  - id: event-types-in-hpc
+    title: "Standard Event Types (MPI, OpenMP, Hardware)"
+    level: 2
+  - id: state-vs-event
+    title: "Events vs. States (Transitions and Durations)"
+    level: 2
+---
+
+## Execution as a Discrete Event Stream
+
+To monitor, profile, and trace a parallel application, modern performance tools model execution as a **chronological sequence of discrete events**:
+- During execution, every process (in MPI) and every thread (in OpenMP) transitions continuously between computational and communicative phases.
+- An **event** is an atomic, instantaneous occurrence at a specific point in time and physical location in the system that alters program state or marks a region boundary.
+
+## Structure of an Event Record
+
+Every measurement event recorded by an instrumentation system contains an immutable data record:
+
+$$
+\text{Event} = \langle t, \text{loc}, \text{type}, \text{attrs} \rangle
+$$
+
+1. **Timestamp ($t$)**: A high-precision timestamp obtained from high-resolution hardware timers (e.g., CPU Time-Stamp Counter `RDTSC` or `MPI_Wtime()`), typically with nanosecond resolution.
+2. **Location ($	ext{loc}$)**: The exact hierarchical execution context: $\langle \text{Host Node}, \text{Process / Rank ID}, \text{Thread ID} \rangle$.
+3. **Event Type ($	ext{type}$)**: The semantic category of the event (e.g. Function Enter, Function Exit, Collective Begin).
+4. **Attributes ($	ext{attrs}$)**: Context-specific metadata:
+   - For point-to-point MPI: partner rank, message size in bytes, tag, communicator.
+   - For OpenMP: team size, parallel region ID.
+   - For hardware counters: instantaneous cache misses, retired instructions.
+
+## Standard Event Types in HPC
+
+| Category | Typical Event Names | When Generated |
+| :--- | :--- | :--- |
+| **Function Regions** | `REGION_ENTER`, `REGION_EXIT` | At entry prologue and exit epilogue of user functions |
+| **MPI Point-to-Point** | `MPI_SEND_START`, `MPI_RECV_COMPLETE` | When initiating or completing message transfers |
+| **MPI Collectives** | `MPI_COLLECTIVE_BEGIN`, `MPI_COLLECTIVE_END` | Entry and exit of `MPI_Bcast`, `MPI_Reduce`, etc. |
+| **OpenMP Parallel** | `OMP_FORK`, `OMP_JOIN`, `OMP_BARRIER_WAIT` | Thread team creation, destruction, synchronization |
+| **Hardware Counters** | `PAPI_TOT_CYC`, `PAPI_L3_TCM` | Periodic hardware performance monitor overflows |
+
+## Events vs. States (Transitions and Durations)
+
+It is crucial to distinguish between an **event** and a **state**:
+- An **event** has zero duration ($t_{\text{duration}} = 0$). It is an instantaneous point transition (e.g., calling `MPI_Send`).
+- A **state** has non-zero duration ($t_{\text{duration}} = t_{\text{exit}} - t_{\text{enter}}$). A state is delimited by an enter event and an exit event.
+- For example, the state `WAITING_FOR_MPI_RECV` begins at event `ENTER(MPI_Recv)` at $t_1 = 12.4\text{ms}$ and ends at event `EXIT(MPI_Recv)` at $t_2 = 18.9\text{ms}$, representing an idle state duration of $6.5\text{ms}$.

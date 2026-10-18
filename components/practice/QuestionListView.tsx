@@ -6,7 +6,7 @@ import { SolvedQuestion, QuestionCategory } from '@/lib/types';
 import { QuestionCard } from '@/components/ui/QuestionCard';
 
 interface QuestionListViewProps {
-  technology: 'MPI' | 'OPENMP';
+  technology: 'MPI' | 'OPENMP' | 'NETWORKS' | 'VECTORS' | 'PERFORMANCE';
   title: string;
   description: string;
   questions: SolvedQuestion[];

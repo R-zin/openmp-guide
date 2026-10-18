@@ -1,0 +1,341 @@
+[
+  {
+    "id": "perf-01",
+    "technology": "performance",
+    "topicRef": "01-why-performance-tools",
+    "category": "conceptual",
+    "title": "Sources of Parallel Performance Inefficiency",
+    "prompt": "List the five primary sources of performance degradation in parallel computing systems and provide a one-sentence description for each.",
+    "solutionSteps": [
+      "1. Computational Load Imbalance: Unequal work distribution causing faster processes to idle waiting at barriers.",
+      "2. Communication Overhead: Inter-node network latencies and message buffer contention.",
+      "3. Synchronisation and Lock Contention: Thread serialization inside critical sections and barriers.",
+      "4. Memory and Cache Inefficiencies: Cache misses, false sharing, and NUMA remote access penalties.",
+      "5. Serial Code Fraction (Amdahl's Law): Non-parallelizable program sections limiting asymptotic speedup."
+    ]
+  },
+  {
+    "id": "perf-02",
+    "technology": "performance",
+    "topicRef": "02-performance-engineering-cycle",
+    "category": "conceptual",
+    "title": "The Four Phases of Performance Engineering",
+    "prompt": "Describe the four iterative phases of the HPC performance engineering cycle and state the primary deliverable of each phase.",
+    "solutionSteps": [
+      "1. Measure: Collect runtime profiles and event traces using sampling or instrumentation. Deliverable: profile.cubex or trace.otf2.",
+      "2. Analyse: Process measurement data to locate dominant hotspots, call-paths, and wait-states. Deliverable: Root-cause bottleneck diagnosis.",
+      "3. Optimise: Apply targeted code modifications (load balancing, SIMD, non-blocking MPI). Deliverable: Refactored source code.",
+      "4. Verify: Validate numerical correctness and confirm execution speedup. Deliverable: Verified benchmark scaling report."
+    ]
+  },
+  {
+    "id": "perf-03",
+    "technology": "performance",
+    "topicRef": "03-key-concepts",
+    "category": "numeric-calculation",
+    "title": "Amdahl's Law: 5% Serial Fraction on 64 Cores",
+    "prompt": "A program has an inherent serial fraction s = 0.05 (5%). Calculate theoretical speedup on 64 cores and the maximum possible speedup with infinite cores.",
+    "solutionSteps": [
+      "s = 0.05, p_par = 0.95, N = 64.",
+      "Amdahl's formula: S(N) = 1 / (s + p_par / N).",
+      "S(64) = 1 / (0.05 + 0.95 / 64) = 1 / (0.05 + 0.01484) = 1 / 0.06484 = 15.42x.",
+      "Infinite cores limit: S(inf) = 1 / s = 1 / 0.05 = 20.0x."
+    ]
+  },
+  {
+    "id": "perf-04",
+    "technology": "performance",
+    "topicRef": "03-key-concepts",
+    "category": "numeric-calculation",
+    "title": "Gustafson's Law: 5% Serial Fraction on 64 Cores",
+    "prompt": "Apply Gustafson's Law to calculate scaled speedup on 64 cores for an enlarged dataset where the serial fraction on parallel hardware is s = 0.05.",
+    "solutionSteps": [
+      "Gustafson's formula: S(N) = N - s(N - 1).",
+      "S(64) = 64 - 0.05 * (64 - 1) = 64 - 0.05 * 63 = 64 - 3.15 = 60.85x.",
+      "Under weak scaling (enlarging workload), 64 cores achieve 60.85x speedup compared to only 15.42x under Amdahl's strong scaling."
+    ]
+  },
+  {
+    "id": "perf-05",
+    "technology": "performance",
+    "topicRef": "03-key-concepts",
+    "category": "numeric-calculation",
+    "title": "Karp-Flatt Metric Calculation",
+    "prompt": "A parallel application achieves speedup S = 12 on p = 16 processors. Calculate the Karp-Flatt experimentally determined serial fraction e.",
+    "solutionSteps": [
+      "Formula: e = (1/S - 1/p) / (1 - 1/p).",
+      "1/S = 1/12 = 0.08333; 1/p = 1/16 = 0.06250.",
+      "Numerator = 0.08333 - 0.06250 = 0.02083.",
+      "Denominator = 1 - 0.06250 = 0.93750.",
+      "e = 0.02083 / 0.93750 = 0.0222 (2.22% experimental serial fraction)."
+    ]
+  },
+  {
+    "id": "perf-06",
+    "technology": "performance",
+    "topicRef": "04-event-model-execution",
+    "category": "conceptual",
+    "title": "Event Record Tuple Structure",
+    "prompt": "List the four fundamental fields in an HPC event record tuple and explain what each field specifies.",
+    "solutionSteps": [
+      "Event = <timestamp, location, type, attributes>.",
+      "1. Timestamp: High-resolution hardware time (nanoseconds) when the event fired.",
+      "2. Location: Node, process/rank ID, and thread ID where the event occurred.",
+      "3. Type: Semantic category (e.g. Region Enter, Region Exit, MPI Send, Lock Acquire).",
+      "4. Attributes: Contextual parameters (message bytes, partner rank, communicator, hardware counter values)."
+    ]
+  },
+  {
+    "id": "perf-07",
+    "technology": "performance",
+    "topicRef": "05-sampling-vs-instrumentation",
+    "category": "compare-and-contrast",
+    "title": "Statistical Sampling vs. Software Instrumentation",
+    "prompt": "Compare statistical sampling and software instrumentation across overhead, recompilation requirements, and accuracy of function call counts.",
+    "solutionSteps": [
+      "Overhead: Sampling has minimal overhead (1-3%); Instrumentation has higher overhead (5-20%+ if unfiltered).",
+      "Recompilation: Sampling requires no source modification or recompilation (runs on native binary); Instrumentation typically requires recompiling with tool wrappers (e.g. scorep mpicc).",
+      "Call count accuracy: Sampling estimates time statistically and cannot record exact call counts; Instrumentation logs every single entry/exit, providing 100% exact invocation counts."
+    ]
+  },
+  {
+    "id": "perf-08",
+    "technology": "performance",
+    "topicRef": "05-sampling-vs-instrumentation",
+    "category": "conceptual",
+    "title": "The Heisenberg (Probe) Effect in Instrumentation",
+    "prompt": "What is the Heisenberg (probe) effect in parallel performance measurement? Give a concrete example of how probe overhead can alter program behavior.",
+    "solutionSteps": [
+      "The probe effect occurs when the physical overhead of measurement probes perturbs execution timing, altering the very performance characteristics being measured.",
+      "Example: If rank 0 is instrumented with a heavy probe inside a tiny helper function, rank 0 is artificially delayed.",
+      "This delay might cause rank 1 to sit idle at an MPI_Recv waiting for rank 0, fabricating a fake 'Late Sender' bottleneck that does not exist in production code."
+    ]
+  },
+  {
+    "id": "perf-09",
+    "technology": "performance",
+    "topicRef": "06-profiling",
+    "category": "conceptual",
+    "title": "Exclusive Time vs. Inclusive Time",
+    "prompt": "Define exclusive time and inclusive time in profiling. Which metric should an engineer sort by when seeking optimization candidates?",
+    "solutionSteps": [
+      "Inclusive Time: Total elapsed time spent within a function, including all time spent in child subroutines called by it.",
+      "Exclusive Time: Time spent strictly within the body of the function itself, excluding time in child callees.",
+      "Optimization priority: Engineers sort by Exclusive Time, because it isolates where the CPU is actively executing arithmetic instructions rather than delegating work to children."
+    ]
+  },
+  {
+    "id": "perf-10",
+    "technology": "performance",
+    "topicRef": "06-profiling",
+    "category": "conceptual",
+    "title": "Flat Profile vs. Call-Path Profile",
+    "prompt": "What critical diagnostic information is present in a call-path profile (CUBE) that is completely missing from a flat profile?",
+    "solutionSteps": [
+      "A flat profile lists functions in isolation without caller context.",
+      "If MPI_Wait takes 40% of time, a flat profile cannot show which application module invoked it.",
+      "A call-path profile preserves the full hierarchical call chain (e.g. main -> solver -> exchange_halo -> MPI_Wait vs main -> io -> flush -> MPI_Wait), pinpointing the exact algorithmic source of delays."
+    ]
+  },
+  {
+    "id": "perf-11",
+    "technology": "performance",
+    "topicRef": "07-tracing",
+    "category": "conceptual",
+    "title": "Why Tracing Reveals Idle Wait States",
+    "prompt": "Explain why multi-rank timeline tracing is necessary to diagnose MPI wait-states such as 'Late Sender' that flat profiling cannot explain.",
+    "solutionSteps": [
+      "Flat profiling aggregates total time across the whole execution into a single number: e.g. MPI_Recv took 50 seconds.",
+      "Profiling cannot show whether that 50s was spent transferring data or sitting idle waiting for the sender to transmit.",
+      "Tracing records timestamps of individual events, revealing that the receiver posted MPI_Recv at t=10s, but the sender was busy computing until t=59s, proving a 49s idle wait state caused by sender delay."
+    ]
+  },
+  {
+    "id": "perf-12",
+    "technology": "performance",
+    "topicRef": "07-tracing",
+    "category": "conceptual",
+    "title": "The Data Volume Problem in Tracing",
+    "prompt": "Why can tracing cause severe storage and I/O bottlenecks in large-scale HPC runs? What are two standard techniques used to mitigate trace file size?",
+    "solutionSteps": [
+      "Every event generates binary log records; across thousands of ranks running millions of function calls per second, trace logs rapidly reach gigabytes or terabytes, overwhelming parallel file systems.",
+      "Mitigation 1: Selective Filtering (e.g. Score-P filter file) to exclude small, frequently called utility routines from being logged.",
+      "Mitigation 2: Phase-Specific Tracing (turning tracing ON only for 2-3 representative simulation iterations via API calls)."
+    ]
+  },
+  {
+    "id": "perf-13",
+    "technology": "performance",
+    "topicRef": "08-profiling-vs-tracing-comparison",
+    "category": "compare-and-contrast",
+    "title": "Profiling vs Tracing File Size Scalability",
+    "prompt": "Contrast the asymptotic file size growth of profiling versus tracing as run duration increases from 1 minute to 10 hours.",
+    "solutionSteps": [
+      "Profiling output file size remains CONSTANT regardless of duration, scaling as O(p * num_functions). Summary counters are updated in-place.",
+      "Tracing output file size scales LINEARLY with time: O(p * event_frequency * duration).",
+      "A 10-hour trace will be 600 times larger than a 1-minute trace, whereas profile size is identical."
+    ]
+  },
+  {
+    "id": "perf-14",
+    "technology": "performance",
+    "topicRef": "09-tools",
+    "category": "conceptual",
+    "title": "Score-P Unified Tool Ecosystem",
+    "prompt": "What is Score-P? What analysis tools consume Score-P output files?",
+    "solutionSteps": [
+      "Score-P is a unified software measurement infrastructure that instruments and records performance data for HPC codes.",
+      "Consumers of Score-P data:",
+      "1. CUBE: Interactive visualizer for .cubex profile trees.",
+      "2. Scalasca: Automatic wait-state pattern analysis engine.",
+      "3. Vampir: Graphical timeline viewer for .otf2 trace files."
+    ]
+  },
+  {
+    "id": "perf-15",
+    "technology": "performance",
+    "topicRef": "09-tools",
+    "category": "conceptual",
+    "title": "Scalasca Automated Wait-State Analysis",
+    "prompt": "Describe how Scalasca analyzes an OTF2 trace to detect 'Late Sender' and 'Wait at Barrier' bottlenecks.",
+    "solutionSteps": [
+      "Scalasca executes a parallel replay of the OTF2 trace across cluster ranks.",
+      "Late Sender: Scalasca checks timestamp t_recv of MPI_Recv and timestamp t_send of matching MPI_Send. If t_recv < t_send, it quantifies idle time (t_send - t_recv) as a Late Sender wait-state.",
+      "Wait at Barrier: Scalasca marks arrival times of all ranks at MPI_Barrier and calculates the idle penalty suffered by early ranks waiting for the slowest straggler rank."
+    ]
+  },
+  {
+    "id": "perf-16",
+    "technology": "performance",
+    "topicRef": "09-tools",
+    "category": "conceptual",
+    "title": "PMPI Mechanism vs mpiP Tool",
+    "prompt": "Clearly differentiate between the MPI Profiling Interface (PMPI) and the mpiP profiling tool.",
+    "solutionSteps": [
+      "PMPI: A standardized profiling API specification built into all MPI implementations. Every routine (MPI_Send) has a weak symbol alias (PMPI_Send), allowing tool developers to intercept calls via wrapper libraries.",
+      "mpiP: A specific, lightweight profiling software library that uses the PMPI interface to generate a concise summary report of communication time and bytes transferred per rank.",
+      "PMPI is the underlying interface mechanism; mpiP is an end-user tool."
+    ],
+    "watchOutTip": "Do not treat PMPI and mpiP as synonyms!"
+  },
+  {
+    "id": "perf-17",
+    "technology": "performance",
+    "topicRef": "09-tools",
+    "category": "numeric-calculation",
+    "title": "Energy-Delay Product (EDP) Calculation",
+    "prompt": "System A completes a job in 100 seconds consuming 200 Watts average power. System B completes the job in 80 seconds consuming 280 Watts average power. Calculate energy and EDP for both. Which system is more energy-efficient by EDP?",
+    "solutionSteps": [
+      "System A: Energy E_A = Power * Time = 200 W * 100 s = 20,000 Joules. EDP_A = E * T = 20,000 * 100 = 2,000,000 J*s.",
+      "System B: Energy E_B = Power * Time = 280 W * 80 s = 22,400 Joules. EDP_B = E * T = 22,400 * 80 = 1,792,000 J*s.",
+      "Conclusion: System A uses less raw energy (20,000 J vs 22,400 J), but System B has a lower EDP (1.79M vs 2.00M) because its 20% runtime reduction outweighs the energy increase."
+    ]
+  },
+  {
+    "id": "perf-18",
+    "technology": "performance",
+    "topicRef": "09-tools",
+    "category": "write-the-program",
+    "title": "Timing an OpenMP Loop with omp_get_wtime()",
+    "prompt": "Write a compilable C snippet using omp_get_wtime() to measure and print the wall-clock execution time of an OpenMP parallel loop.",
+    "solutionSteps": [
+      "Include <omp.h> and <stdio.h>.",
+      "Record starting timestamp: double start = omp_get_wtime();",
+      "Execute parallel loop: #pragma omp parallel for ...",
+      "Record end timestamp: double end = omp_get_wtime();",
+      "Print elapsed time: printf(\"Elapsed wall time: %.6f seconds\\n\", end - start);"
+    ]
+  },
+  {
+    "id": "perf-19",
+    "technology": "performance",
+    "topicRef": "10-diagnose-bottlenecks",
+    "category": "find-the-bug",
+    "title": "Diagnosing High MPI_Recv Time in Flat Profile",
+    "prompt": "A flat profile shows that 60% of total application time is spent in MPI_Recv. What are the two primary possible root causes, and how do you differentiate between them?",
+    "solutionSteps": [
+      "Root Cause 1: Computational load imbalance (Late Sender) - the sending rank is delayed in heavy calculation, causing the receiver to idle.",
+      "Root Cause 2: Physical network saturation / high transfer size - the message is enormous and takes long to transfer across the physical wire.",
+      "Differentiation: Inspect a trace timeline or mpiP byte transfer statistics. If transfer size is small and receiver entered MPI_Recv long before the sender posted MPI_Send, it is load imbalance. If sender and receiver posted simultaneously and transfer duration is large, it is network bandwidth bottleneck."
+    ]
+  },
+  {
+    "id": "perf-20",
+    "technology": "performance",
+    "topicRef": "10-diagnose-bottlenecks",
+    "category": "find-the-bug",
+    "title": "Diagnosing OpenMP False Sharing from Hardware Counters",
+    "prompt": "An OpenMP loop shows near 100% CPU utilization across 8 cores, but runs slower than serial code. PAPI reports excessive L1 data cache invalidations. Diagnose the problem and provide the fix.",
+    "solutionSteps": [
+      "Diagnosis: False Sharing. Multiple threads are concurrently writing to independent scalar variables that reside on the same 64-byte hardware cache line.",
+      "Cache coherence (MESI) repeatedly invalidates the cache line across all CPU cores, causing bus lock contention.",
+      "Fix: Accumulate intermediate results into thread-local variables (allocated in CPU registers), and write to the shared array only once when the loop completes."
+    ]
+  },
+  {
+    "id": "perf-21",
+    "technology": "performance",
+    "topicRef": "10-diagnose-bottlenecks",
+    "category": "find-the-bug",
+    "title": "Diagnosing Lock Serialization in OpenMP",
+    "prompt": "A profiler reports that OpenMP threads spend 70% of execution time stalled in 'GOMP_critical_start'. What is the bottleneck, and what are two ways to eliminate it?",
+    "solutionSteps": [
+      "Bottleneck: Critical Section Contention / Lock Serialization. Threads are contending for a single #pragma omp critical block, turning parallel execution into sequential lock queues.",
+      "Remedy 1: Replace #pragma omp critical with #pragma omp atomic if the operation is a simple scalar update (hardware atomic instructions avoid heavy OS locks).",
+      "Remedy 2: Replace the critical block with a reduction clause: #pragma omp parallel for reduction(+: sum)."
+    ]
+  },
+  {
+    "id": "perf-22",
+    "technology": "performance",
+    "topicRef": "03-key-concepts",
+    "category": "numeric-calculation",
+    "title": "Parallel Efficiency for Speedup 24 on 32 Processors",
+    "prompt": "If a code runs on 32 processors and achieves a speedup of 24x over the single-core baseline, calculate its parallel efficiency.",
+    "solutionSteps": [
+      "Speedup S = 24, Processors p = 32.",
+      "Efficiency E = S / p = 24 / 32 = 0.75 (75.0% efficiency).",
+      "Overhead: 25% of aggregate processor time is lost to communication, synchronization, and serial bottlenecks."
+    ]
+  },
+  {
+    "id": "perf-23",
+    "technology": "performance",
+    "topicRef": "03-key-concepts",
+    "category": "conceptual",
+    "title": "Superlinear Speedup Causes",
+    "prompt": "Can parallel speedup ever exceed processor count (S(p) > p)? Explain the physical mechanism that causes superlinear speedup.",
+    "solutionSteps": [
+      "Yes, superlinear speedup can occur in empirical benchmarks.",
+      "Primary cause: Memory Hierarchy / Cache Effects.",
+      "When running on 1 processor, a large dataset (e.g. 100 MB) exceeds the single CPU's L3 cache (32 MB), forcing slow DRAM memory accesses.",
+      "When distributed across 4 processors, each node holds only 25 MB, which fits entirely inside local high-speed L3 cache, eliminating DRAM latency and yielding speedup > 4x."
+    ]
+  },
+  {
+    "id": "perf-24",
+    "technology": "performance",
+    "topicRef": "09-tools",
+    "category": "conceptual",
+    "title": "Linux perf Tool for Performance Analysis",
+    "prompt": "What is the Linux 'perf' tool? List two common commands used to record and report CPU hardware counter profiles.",
+    "solutionSteps": [
+      "Linux perf is a powerful statistical sampling profiler integrated into the Linux kernel that monitors CPU Performance Monitoring Units (PMU).",
+      "Command 1: 'perf stat ./program' (counts aggregate hardware counters: cycles, instructions, cache misses, branch misses).",
+      "Command 2: 'perf record -g ./program' followed by 'perf report' (records call-graph execution samples and displays an interactive browser of hotspot functions)."
+    ]
+  },
+  {
+    "id": "perf-25",
+    "technology": "performance",
+    "topicRef": "03-key-concepts",
+    "category": "conceptual",
+    "title": "Strong Scaling Limit vs Weak Scaling Limit",
+    "prompt": "Contrast the asymptotic limits of Strong Scaling (Amdahl) and Weak Scaling (Gustafson) as processor count N -> infinity.",
+    "solutionSteps": [
+      "Strong Scaling: Problem size is fixed. As N -> infinity, speedup is strictly capped at S(infinity) = 1/s (where s is serial fraction). Efficiency approaches zero.",
+      "Weak Scaling: Problem size scales proportionally with N. As N -> infinity, speedup scales linearly: S(N) = N - s(N - 1). Efficiency remains approximately 1 - s.",
+      "Weak scaling enables massive supercomputing clusters to maintain high efficiency on grand-challenge scientific problems."
+    ]
+  }
+]

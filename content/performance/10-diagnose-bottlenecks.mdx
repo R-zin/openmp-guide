@@ -1,0 +1,125 @@
+---
+id: 10-diagnose-bottlenecks
+slug: 10-diagnose-bottlenecks
+technology: performance
+order: 10
+title: "Worked Performance Diagnosis Exercises"
+description: "Practical scenarios diagnosing real-world parallel bottlenecks from profiles and timelines with corrective remedies."
+readingTimeMinutes: 16
+sections:
+  - id: diagnostic-methodology
+    title: "Diagnostic Framework: Profile to Root Cause"
+    level: 2
+  - id: case-1-late-sender
+    title: "Case 1: Severe MPI_Recv Idle Time (Late Sender)"
+    level: 2
+  - id: case-2-barrier-stall
+    title: "Case 2: Catastrophic MPI_Barrier Wait (Tail Rank)"
+    level: 2
+  - id: case-3-false-sharing
+    title: "Case 3: OpenMP Parallel Degradation (False Sharing)"
+    level: 2
+  - id: case-4-lock-contention
+    title: "Case 4: Severe OpenMP Critical Contention"
+    level: 2
+  - id: interactive-demo
+    title: "Interactive Profiling vs Tracing Stepper"
+    level: 2
+---
+
+## Diagnostic Framework: Profile to Root Cause
+
+When analyzing parallel performance data, follow a structured 3-step diagnostic flow:
+1. **Identify the Symptom**: Which function or synchronization primitive has an anomalously high percentage of exclusive wall-clock time?
+2. **Inspect Context and Timeline**: Does the slowdown occur across all ranks equally (systemic), or does one rank lag behind (imbalance)?
+3. **Formulate Corrective Action**: Apply the targeted architectural or algorithmic fix.
+
+## Case 1: Severe MPI_Recv Idle Time (Late Sender)
+
+### Symptom Profile
+In a 64-rank finite-difference stencil simulation, an aggregated flat profile reports:
+- `compute_stencil()`: 45.2% exclusive time
+- `MPI_Recv()`: **48.6% exclusive time**
+- `MPI_Send()`: 4.1% exclusive time
+
+### Timeline Trace Inspection
+When opening the OTF2 trace in Vampir, the timeline reveals:
+- Rank 0 processes a boundary corner with irregular grid refinement and spends 80ms computing.
+- Ranks 1 through 63 process regular interior blocks and finish computing in only 30ms.
+- Ranks 1 through 63 immediately call blocking `MPI_Recv()` and sit **idle for 50ms** waiting for Rank 0 to finish computing and post `MPI_Send()`.
+
+### Diagnosis
+**Late Sender Bottleneck** caused by computational domain load imbalance on Rank 0.
+
+### Corrective Remedy
+1. **Dynamic / Weighted Domain Decomposition**: Allocate fewer grid cells to Rank 0 to compensate for its irregular boundary arithmetic.
+2. **Asynchronous Non-blocking Overlap**: Restructure code using `MPI_Irecv` and `MPI_Isend`, allowing interior nodes to compute their independent local inner cells while messages are in-flight.
+
+## Case 2: Catastrophic MPI_Barrier Wait (Tail Rank)
+
+### Symptom Profile
+A parallel graph analytics job on 128 ranks scales well up to 16 ranks, but on 128 ranks speedup collapses:
+- `MPI_Barrier()` accounts for **68.4% of total runtime**.
+
+### Timeline Trace Inspection
+The trace shows that at the end of each iteration, 127 ranks reach `MPI_Barrier()` within 1 millisecond of each other. However, Rank 42 takes 150 milliseconds longer because it encountered a high-degree graph hub node (straggler / tail rank).
+
+### Diagnosis
+**Wait at Barrier Imbalance** caused by power-law degree distribution in the graph data.
+
+### Corrective Remedy
+1. **Remove Unnecessary Barriers**: In MPI, explicit `MPI_Barrier()` calls are rarely required before collective operations, as collectives inherently synchronize data.
+2. **Dynamic Work-Stealing**: Use a distributed task queue where idle ranks steal sub-graphs from overloaded ranks.
+
+## Case 3: OpenMP Parallel Degradation (False Sharing)
+
+### Symptom Profile
+An OpenMP loop calculating a histogram runs on 8 cores. Instead of achieving an expected 6x to 7x speedup over the serial version, the 8-thread code runs **4x slower than sequential execution**:
+- PAPI counters report an astronomical surge in **L1 Data Cache Invalidation Requests** (`PAPI_L1_DCA` and coherence invalidations).
+
+### Code Inspection
+```c
+int count[8]; // Array of 8 thread-local counters
+#pragma omp parallel num_threads(8)
+{
+    int tid = omp_get_thread_num();
+    for (int i = tid; i < N; i += 8) {
+        if (data[i] > threshold) count[tid]++; // BUG!
+    }
+}
+```
+
+### Diagnosis
+**False Sharing**. The 8 integers in `count[8]` occupy $8 \times 4 = 32 \text{ bytes}$, which fits entirely inside a **single 64-byte L1 cache line**. Every time any thread increments `count[tid]`, the hardware MESI protocol invalidates the cache line across all other 7 cores, causing intense bus contention and pipeline stalls.
+
+### Corrective Remedy
+Accumulate into a thread-local scalar variable and write to memory only once at the end:
+```c
+#pragma omp parallel num_threads(8)
+{
+    int tid = omp_get_thread_num();
+    int local_count = 0; // Stored in thread-private CPU register!
+    for (int i = tid; i < N; i += 8) {
+        if (data[i] > threshold) local_count++;
+    }
+    count[tid] = local_count;
+}
+```
+
+## Case 4: Severe OpenMP Critical Contention
+
+### Symptom Profile
+An OpenMP parallel image filter shows CPU utilization at nearly 800% (8 cores active), but wall-clock runtime does not improve. Profiling indicates that threads spend 75% of their time stalled in `GOMP_critical_start`.
+
+### Diagnosis
+**Lock Serialization**. All 8 threads are contending for a single global `#pragma omp critical` block, forcing execution to become completely sequential.
+
+### Corrective Remedy
+1. Replace critical section with `#pragma omp atomic` if the operation is a single scalar update.
+2. Use `#pragma omp parallel for reduction(+: sum)` to allow independent lock-free thread accumulation.
+
+## Interactive Profiling vs Tracing Stepper
+
+Inspect how a multi-rank load imbalance manifests differently in flat profiling vs timeline tracing:
+
+<ProfilingTracingDemo />

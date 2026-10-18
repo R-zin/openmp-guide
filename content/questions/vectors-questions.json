@@ -1,0 +1,349 @@
+[
+  {
+    "id": "vec-01",
+    "technology": "vectors",
+    "topicRef": "01-history-and-evolution",
+    "category": "conceptual",
+    "title": "Cray-1 Register Specifications",
+    "prompt": "What are the exact specifications of the vector registers in the Cray-1 and VMIPS architectures? Clarify the distinction between element count and bit width.",
+    "solutionSteps": [
+      "The Cray-1 and VMIPS architectures feature exactly 8 vector registers (V0 through V7).",
+      "Each register holds 64 elements, and each element is 64 bits wide (IEEE 754 double precision float).",
+      "The total physical data capacity of each register is 64 * 64 = 4,096 bits (512 bytes).",
+      "Total vector register file capacity is 8 * 512 = 4,096 bytes."
+    ],
+    "watchOutTip": "Do not state that the register holds only 64 bits; it holds 64 elements of 64 bits each!"
+  },
+  {
+    "id": "vec-02",
+    "technology": "vectors",
+    "topicRef": "01-history-and-evolution",
+    "category": "compare-and-contrast",
+    "title": "Cray-1 vs. CDC Cyber 205 Vector Architecture",
+    "prompt": "Contrast the vector storage architectures of the Cray-1 and the CDC Cyber 205 supercomputers.",
+    "solutionSteps": [
+      "Cray-1 is a Register-to-Register vector processor: all arithmetic operations operate strictly between vector registers (e.g. ADDV V3, V1, V2). Requires vector load and store instructions to move data between registers and memory.",
+      "CDC Cyber 205 is a Memory-to-Memory vector processor: vector instructions stream operands directly from main memory into functional units and write results directly back to memory, without intermediate vector registers.",
+      "Trade-off: Register-to-register allows fast register reuse and vector chaining; memory-to-memory eliminates register file capacity limits but suffers high memory latency startup costs."
+    ]
+  },
+  {
+    "id": "vec-03",
+    "technology": "vectors",
+    "topicRef": "02-why-vector-processing",
+    "category": "conceptual",
+    "title": "Why Deep Pipelines Fail for Scientific Code",
+    "prompt": "Explain why increasing scalar pipeline depth fails to yield proportional speedup for large scientific numerical codes.",
+    "solutionSteps": [
+      "Diminishing clock returns: Beyond 3-4 GHz, thermal dissipation and dynamic power (P = C V^2 f) escalate exponentially.",
+      "Branch misprediction penalties: Deep pipelines suffer severe penalties (15-30 cycles) whenever a loop branch mispredicts.",
+      "Cache locality breakdown: Scientific codes iterate over gigabytes of dense arrays with low temporal reuse, causing continuous cache miss stalls.",
+      "Instruction fetch/decode bottlenecks: Scalar CPUs must fetch and decode separate instructions for every single floating-point operation."
+    ]
+  },
+  {
+    "id": "vec-04",
+    "technology": "vectors",
+    "topicRef": "03-pipelining",
+    "category": "numeric-calculation",
+    "title": "Three-Segment Pipeline Execution for n = 7 Tasks",
+    "prompt": "A 3-segment arithmetic pipeline evaluates R_i = A_i * B_i + C_i for n = 7 tasks. Calculate the total clock cycles with pipelining, without pipelining, and the speedup.",
+    "solutionSteps": [
+      "Pipelined clock cycles: T_p = k + n - 1 = 3 + 7 - 1 = 9 clock cycles.",
+      "Unpipelined (sequential) cycles: T_n = n * k = 7 * 3 = 21 clock cycles.",
+      "Speedup S_3 = T_n / T_p = 21 / 9 = 2.33x.",
+      "Efficiency E_3 = S_3 / k = 2.33 / 3 = 77.8%."
+    ]
+  },
+  {
+    "id": "vec-05",
+    "technology": "vectors",
+    "topicRef": "03-pipelining",
+    "category": "numeric-calculation",
+    "title": "Asymptotic Speedup of a 6-Stage Pipeline",
+    "prompt": "For a 6-stage pipeline (k = 6), calculate the speedup for n = 10, n = 100, and n = 1000 tasks. What is the theoretical limit as n approaches infinity?",
+    "solutionSteps": [
+      "For n = 10: S = (10 * 6) / (6 + 10 - 1) = 60 / 15 = 4.00x.",
+      "For n = 100: S = (100 * 6) / (6 + 100 - 1) = 600 / 105 = 5.71x.",
+      "For n = 1000: S = (1000 * 6) / (6 + 1000 - 1) = 6000 / 1005 = 5.97x.",
+      "Theoretical limit: lim_{n -> inf} (n * k) / (k + n - 1) = k = 6.00x."
+    ]
+  },
+  {
+    "id": "vec-06",
+    "technology": "vectors",
+    "topicRef": "04-pipeline-conflicts",
+    "category": "conceptual",
+    "title": "Three Categories of Pipeline Conflicts",
+    "prompt": "Identify and explain the three major pipeline conflicts (hazards) that stall an execution pipeline. Provide one hardware solution for each.",
+    "solutionSteps": [
+      "1. Resource Conflicts (Structural Hazards): Two instructions compete for the same physical hardware unit in the same cycle (e.g. single-ported memory). Solution: Separate instruction and data caches (Harvard architecture) or multi-ported register files.",
+      "2. Data Dependencies (Data Hazards): An instruction depends on the result of an earlier uncompleted instruction (RAW, WAR, WAW). Solution: Internal forwarding / bypassing or vector chaining.",
+      "3. Branch Difficulties (Control Hazards): Conditional branches alter the PC, requiring speculatively fetched instructions to be flushed. Solution: Branch prediction buffers or vector mask registers (predication)."
+    ]
+  },
+  {
+    "id": "vec-07",
+    "technology": "vectors",
+    "topicRef": "05-simd",
+    "category": "compare-and-contrast",
+    "title": "Array Processors vs. Vector Processors",
+    "prompt": "Contrast Array Processors and Vector Processors within Flynn's SIMD classification. Explain 'parallelism in space' vs 'parallelism in time'.",
+    "solutionSteps": [
+      "Array Processors exploit parallelism in SPACE: N physical arithmetic processing elements (PEs) are replicated across silicon. All N PEs execute the same instruction on different data words simultaneously during the same clock cycle.",
+      "Vector Processors exploit parallelism in TIME: Operates through a deeply pipelined arithmetic execution unit. Consecutive data elements stream through the pipeline stages in successive clock cycles.",
+      "Trade-off: Array processors require large silicon area to duplicate ALUs; vector processors achieve compact silicon area by maximizing pipeline clock frequency and keeping stages continuously filled."
+    ]
+  },
+  {
+    "id": "vec-08",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "conceptual",
+    "title": "Role of VLEN and MVL Registers",
+    "prompt": "Define Maximum Vector Length (MVL) and Vector Length Register (VLEN). How do they interact when processing vectors of length n < MVL?",
+    "solutionSteps": [
+      "MVL (Maximum Vector Length) is the fixed physical hardware limit of elements in a vector register (e.g. MVL = 64).",
+      "VLEN (Vector Length Register) is a dynamic software-programmable control register holding the active number of elements for current vector instructions (0 <= VLEN <= MVL).",
+      "When n < MVL (e.g. n = 28): Software sets VLEN = 28 using MTC1 VLEN, R1. Subsequent vector instructions automatically execute only on elements 0 through 27, leaving remaining register slots untouched."
+    ]
+  },
+  {
+    "id": "vec-09",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "numeric-calculation",
+    "title": "Strip-Mining Breakdown for n = 150, MVL = 64",
+    "prompt": "An array of n = 150 elements is processed on a vector architecture with MVL = 64. Calculate the number of strip-mining passes and the VLEN assigned to each pass.",
+    "solutionSteps": [
+      "Total passes = ceil(n / MVL) = ceil(150 / 64) = 3 passes.",
+      "Remainder calculation: 150 % 64 = 22 elements.",
+      "Pass 1: VLEN = 22 elements (processes elements 0 through 21).",
+      "Pass 2: VLEN = 64 elements (processes elements 22 through 85).",
+      "Pass 3: VLEN = 64 elements (processes elements 86 through 149)."
+    ]
+  },
+  {
+    "id": "vec-10",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "numeric-calculation",
+    "title": "Instruction Count: Scalar vs. Vector for n = 100 Add",
+    "prompt": "Compare the number of dynamic machine instructions executed to add two 100-element arrays using a scalar loop vs VMIPS vector code (MVL = 64).",
+    "solutionSteps": [
+      "Scalar loop: Each iteration requires 6 instructions (load A, load B, add, store C, increment pointer, branch). For 100 elements: 100 * 6 = 600 dynamic instructions.",
+      "VMIPS vector code with strip-mining: Requires 2 strip passes (first of 36, second of 64). Each pass executes 6 instructions (LV A, LV B, ADDV, SV C, pointer bump, branch).",
+      "Total vector dynamic instructions = 2 passes * 6 = 12 instructions (plus 2 loop setup instructions = 14 total).",
+      "Vector execution reduces dynamic instruction issue count by over 97%!"
+    ]
+  },
+  {
+    "id": "vec-11",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "conceptual",
+    "title": "Memory Bank Conflicts and Stride",
+    "prompt": "Explain memory interleaving and state the condition under which memory bank conflicts occur during strided vector memory accesses.",
+    "solutionSteps": [
+      "Memory interleaving divides main memory into M independent banks (e.g. M = 16) where address A maps to bank A % M.",
+      "Each bank has a busy recovery cycle time t_cycle (e.g. 4 cycles).",
+      "If a strided vector access accesses consecutive elements with stride s, memory bank conflict occurs whenever gcd(s, M) > 1 and the interval between accesses is less than t_cycle.",
+      "When gcd(s, M) = 1 (e.g. odd stride with power-of-two banks), all M banks are accessed before repeating, preventing bank stall."
+    ]
+  },
+  {
+    "id": "vec-12",
+    "technology": "vectors",
+    "topicRef": "07-vmips-architecture",
+    "category": "write-the-program",
+    "title": "VMIPS Instruction Semantics for ADDV.D and ADDVS.D",
+    "prompt": "Explain the difference in operands and hardware execution between VMIPS instructions ADDV.D and ADDVS.D.",
+    "solutionSteps": [
+      "ADDV.D Vd, Vs1, Vs2 is a Vector-Vector addition: for each element i from 0 to VLEN-1, Vd[i] = Vs1[i] + Vs2[i]. Both inputs are 64-element vector registers.",
+      "ADDVS.D Vd, Vs, Fs is a Vector-Scalar addition: for each element i from 0 to VLEN-1, Vd[i] = Vs[i] + Fs. Operand Fs is a single scalar floating-point register whose value is broadcast to all vector stages.",
+      "Hardware benefit: ADDVS.D avoids allocating an entire vector register just to hold a repeated constant scalar value."
+    ]
+  },
+  {
+    "id": "vec-13",
+    "technology": "vectors",
+    "topicRef": "07-vmips-architecture",
+    "category": "conceptual",
+    "title": "Vector Chaining Mechanism and Speedup",
+    "prompt": "What is vector chaining? How does it improve the execution time of dependent vector operations?",
+    "solutionSteps": [
+      "Vector chaining allows the results of one vector functional unit to be forwarded directly as input operands to a second vector functional unit without waiting for the first vector register write-back to finish.",
+      "Example: MULV.D V1, V2, V3 followed by ADDV.D V4, V1, V5.",
+      "Without chaining: Multiplier takes 64 cycles to finish V1, then adder takes 64 cycles (total ~128 cycles).",
+      "With chaining: As soon as element 0 exits the multiplier pipeline, it enters the adder pipeline. Both pipelines run concurrently, finishing in 64 + latencies (~75 cycles)."
+    ]
+  },
+  {
+    "id": "vec-14",
+    "technology": "vectors",
+    "topicRef": "08-performance-measures",
+    "category": "conceptual",
+    "title": "Why MIPS is Inadequate for Vector Machines",
+    "prompt": "Why is Million Instructions Per Second (MIPS) an invalid metric for comparing scalar processors with vector supercomputers?",
+    "solutionSteps": [
+      "MIPS counts the number of instruction fetches and decodes completed per second.",
+      "A scalar CPU adding 64 numbers executes 64 ADD instructions (high instruction count -> high MIPS).",
+      "A vector CPU adding 64 numbers executes 1 ADDV instruction (low instruction count -> low MIPS), yet performs the exact same mathematical work in a fraction of the time.",
+      "Because instruction granularity differs drastically between scalar and vector ISAs, MIPS is inversely related to efficiency. FLOPS (Floating-Point Operations Per Second) is the only valid metric."
+    ]
+  },
+  {
+    "id": "vec-15",
+    "technology": "vectors",
+    "topicRef": "08-performance-measures",
+    "category": "numeric-calculation",
+    "title": "Amdahl's Law on Vector Speedup",
+    "prompt": "A program runs on a vector machine where vector mode is 10 times faster than scalar mode. If 20% of the program's operations are inherently scalar, calculate overall speedup.",
+    "solutionSteps": [
+      "Scalar fraction s = 0.20, Vectorizable fraction p_vec = 0.80.",
+      "Vector acceleration factor S_vec = 10.",
+      "Amdahl's Law: S_overall = 1 / (s + p_vec / S_vec).",
+      "S_overall = 1 / (0.20 + 0.80 / 10) = 1 / (0.20 + 0.08) = 1 / 0.28 = 3.57x.",
+      "Even though vector hardware is 10x faster, overall speedup is limited to 3.57x due to the 20% scalar bottleneck."
+    ]
+  },
+  {
+    "id": "vec-16",
+    "technology": "vectors",
+    "topicRef": "09-modern-practice",
+    "category": "write-the-program",
+    "title": "GCC Vectorization Flags and Pragmas",
+    "prompt": "List the GCC compiler flags required to enable aggressive auto-vectorisation and output optimization reports. What OpenMP pragma enforces SIMD vectorisation?",
+    "solutionSteps": [
+      "Optimization level: -O3 (enables loop unrolling and tree vectorisation).",
+      "Architecture targeting: -march=native (enables host SIMD instruction sets such as AVX-2, AVX-512).",
+      "Diagnostic report flag: -fopt-info-vec (or -fopt-info-vec-optimized).",
+      "OpenMP SIMD pragma: #pragma omp simd (informs the compiler that loop iterations have no data dependencies and can be packed into SIMD registers)."
+    ]
+  },
+  {
+    "id": "vec-17",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "numeric-calculation",
+    "title": "Matrix Multiplication Operation Count",
+    "prompt": "How many total floating-point operations are required to multiply two n x n matrices? If n = 1000, how many GFLOPs must be performed?",
+    "solutionSteps": [
+      "Formula: C_{i,j} = sum_{k=0}^{n-1} A_{i,k} * B_{k,j}.",
+      "Each element requires n multiplications and n-1 additions (approximately n multiply-adds = 2n operations).",
+      "For n^2 elements: Total operations = 2 * n^3 FLOPs.",
+      "For n = 1000: Total operations = 2 * (1000)^3 = 2 * 10^9 FLOPs = 2.0 GFLOPs."
+    ]
+  },
+  {
+    "id": "vec-18",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "conceptual",
+    "title": "Vector Gather and Scatter Operations",
+    "prompt": "Describe the function and purpose of vector gather (LVI) and scatter (SVI) instructions. In what applications are they critical?",
+    "solutionSteps": [
+      "Gather (LVI Vd, Ra, Vindex): Uses an index vector Vindex containing memory offsets to load non-contiguous, irregularly spaced data elements into contiguous vector register slots: Vd[i] = Mem[Ra + Vindex[i]].",
+      "Scatter (SVI Vs, Ra, Vindex): Writes contiguous vector register elements into irregular memory addresses determined by index vector Vindex: Mem[Ra + Vindex[i]] = Vs[i].",
+      "Application: Critical for sparse matrix calculations, finite element unstructured meshes, and graph algorithms where non-zero entries are stored via pointer indirection."
+    ]
+  },
+  {
+    "id": "vec-19",
+    "technology": "vectors",
+    "topicRef": "07-vmips-architecture",
+    "category": "conceptual",
+    "title": "Vector Mask Register (VMASK) for Conditional Loops",
+    "prompt": "Explain how the VMASK register implements conditional execution (if-else statements) inside vectorized loops without branching.",
+    "solutionSteps": [
+      "A comparison instruction (e.g. C.LT.D Vs1, Vs2) evaluates a condition on each vector element and writes 1 (true) or 0 (false) into corresponding bits of VMASK.",
+      "Subsequent vector instructions execute on all elements, but hardware write-back into destination register Vd is enabled ONLY for elements where VMASK[i] == 1.",
+      "Elements where VMASK[i] == 0 retain their previous values.",
+      "Benefit: Completely eliminates branch misprediction penalties and pipeline flushes."
+    ]
+  },
+  {
+    "id": "vec-20",
+    "technology": "vectors",
+    "topicRef": "09-modern-practice",
+    "category": "find-the-bug",
+    "title": "Preventing Pointer Aliasing in Vector C Code",
+    "prompt": "Why might a C compiler fail to auto-vectorize 'void add(double *a, double *b, double *c, int n)' even with -O3? How is this fixed?",
+    "solutionSteps": [
+      "Bug cause: Pointer Aliasing. In standard C, pointers a, b, and c could potentially point to overlapping memory regions (e.g. c == a + 1). If pointers alias, writing c[i] could alter a[i+1], creating a loop-carried dependency that forbids SIMD parallel execution.",
+      "Fix: Declare pointers with the C99 __restrict__ keyword: 'void add(const double * __restrict__ a, const double * __restrict__ b, double * __restrict__ c, int n)'.",
+      "This guarantees to the compiler that arrays do not overlap, enabling immediate SIMD vectorisation."
+    ]
+  },
+  {
+    "id": "vec-21",
+    "technology": "vectors",
+    "topicRef": "03-pipelining",
+    "category": "numeric-calculation",
+    "title": "Clock Period in Non-Pipelined vs. Pipelined ALU",
+    "prompt": "A combinational circuit requires 12 ns to complete. If it is partitioned into a 4-segment pipeline with segment delays of 3 ns, 3 ns, 4 ns, and 2 ns, with a 0.5 ns latch delay, what is the maximum clock frequency?",
+    "solutionSteps": [
+      "The pipeline clock period is determined by the slowest segment delay plus the interface latch overhead: t_clock = max(delay_i) + t_latch.",
+      "Max segment delay = 4 ns.",
+      "Clock period t_clock = 4 ns + 0.5 ns = 4.5 ns.",
+      "Maximum clock frequency f = 1 / t_clock = 1 / (4.5 * 10^-9 s) = 222.2 MHz.",
+      "Unpipelined clock was 1 / 12 ns = 83.3 MHz."
+    ]
+  },
+  {
+    "id": "vec-22",
+    "technology": "vectors",
+    "topicRef": "08-performance-measures",
+    "category": "numeric-calculation",
+    "title": "Arithmetic Intensity of Vector Dot Product",
+    "prompt": "Calculate the arithmetic intensity (FLOP/byte) of an inner product kernel computing s = sum_{i=0}^{N-1} A[i] * B[i] for double-precision floats.",
+    "solutionSteps": [
+      "Floating-point operations: N multiplications + (N - 1) additions = 2N - 1 FLOPs (approx 2N FLOPs).",
+      "Memory transfers: Array A requires N * 8 bytes; Array B requires N * 8 bytes. Total bytes read = 16N bytes.",
+      "Arithmetic Intensity I = (2N FLOPs) / (16N Bytes) = 2 / 16 = 0.125 FLOP/Byte.",
+      "Because I is very low, the dot product is heavily memory-bandwidth bound."
+    ]
+  },
+  {
+    "id": "vec-23",
+    "technology": "vectors",
+    "topicRef": "07-vmips-architecture",
+    "category": "conceptual",
+    "title": "Structural Hazard on Vector Register Ports",
+    "prompt": "What structural hazard occurs if two instructions simultaneously attempt to read from vector register V1 when V1 has only one read port?",
+    "solutionSteps": [
+      "If Instruction 1 (e.g. ADDV V3, V1, V2) and Instruction 2 (e.g. MULV V4, V1, V5) both require operand elements from V1 in the same clock cycle, a structural port hazard occurs.",
+      "The second instruction is stalled until the first instruction finishes its 64-element read pass.",
+      "Modern vector architectures provide multi-ported vector registers (e.g. 2 to 4 read ports per register) to eliminate this structural stall."
+    ]
+  },
+  {
+    "id": "vec-24",
+    "technology": "vectors",
+    "topicRef": "06-vector-processor-concepts",
+    "category": "numeric-calculation",
+    "title": "Strip-Mining Remainder: n = 200, MVL = 64",
+    "prompt": "For an array of n = 200 elements on MVL = 64, what are the element counts processed across all passes?",
+    "solutionSteps": [
+      "Total passes = ceil(200 / 64) = 4 passes.",
+      "Remainder = 200 % 64 = 8 elements.",
+      "Pass 1: 8 elements (indices 0 to 7).",
+      "Pass 2: 64 elements (indices 8 to 71).",
+      "Pass 3: 64 elements (indices 72 to 135).",
+      "Pass 4: 64 elements (indices 136 to 199)."
+    ]
+  },
+  {
+    "id": "vec-25",
+    "technology": "vectors",
+    "topicRef": "05-simd",
+    "category": "conceptual",
+    "title": "Flynn's Classification of Multi-Core CPUs with AVX-512",
+    "prompt": "How does a modern multi-core cluster running AVX-512 map onto Flynn's taxonomy?",
+    "solutionSteps": [
+      "At the macro cluster/node level, multiple CPU cores execute independently on different data, making the system MIMD (Multiple Instruction, Multiple Data).",
+      "At the micro core level, each core possesses 512-bit SIMD execution units executing vector instructions across packed 64-bit lanes.",
+      "Hence, modern supercomputing architectures are hybrid MIMD-SIMD systems."
+    ]
+  }
+]

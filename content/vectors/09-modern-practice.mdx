@@ -1,0 +1,128 @@
+---
+id: 09-modern-practice
+slug: 09-modern-practice
+technology: vectors
+order: 9
+title: "Modern Practice: Auto-Vectorisation and SIMD Intrinsics"
+description: "Translating vector concepts to modern GCC compiler auto-vectorisation (-O3, -fopt-info-vec) and OpenMP SIMD pragma with compilable code."
+readingTimeMinutes: 14
+sections:
+  - id: modern-simd-evolution
+    title: "Evolution to Commodity SIMD (AVX & SVE)"
+    level: 2
+  - id: gcc-autovec-flags
+    title: "GCC Auto-Vectorisation Flags"
+    level: 2
+  - id: compilable-vector-c
+    title: "Compilable Vector Addition in C"
+    level: 2
+  - id: pragma-omp-simd
+    title: "Explicit Vectorisation with #pragma omp simd"
+    level: 2
+  - id: verification-report
+    title: "Analyzing GCC -fopt-info-vec Report"
+    level: 2
+---
+
+## Evolution to Commodity SIMD (AVX & SVE)
+
+Modern general-purpose computing has internalized classical vector supercomputing principles into CPU Instruction Set Architectures:
+- **x86 Extensions**: SSE (128-bit), AVX/AVX-2 (256-bit), AVX-512 (512-bit registers $ZMM_0..ZMM_{31}$).
+- **ARM SVE / SVE2**: Scalable Vector Extension on ARMv8/v9 (variable vector register length from 128 to 2048 bits without recompilation, used in the Fugaku supercomputer).
+- **RISC-V Vector Extension (RVV)**: Adopts true Cray-style vector length registers (`vsetvl`) and strip-mining hardware support!
+
+## GCC Auto-Vectorisation Flags
+
+Modern optimizing compilers (GCC, Clang) automatically transform scalar loops into hardware SIMD instructions when safe:
+- `-O3`: Enables high-level loop transformations, loop unrolling, and tree auto-vectorisation.
+- `-march=native`: Directs the compiler to emit the highest SIMD instructions supported by the host CPU (e.g. AVX-2, AVX-512).
+- `-fopt-info-vec`: Instructs GCC to output diagnostic messages reporting which loops were successfully vectorized and which loops failed.
+- `-fopt-info-vec-missed`: Explains *why* a loop could not be vectorized (e.g. data alignment, pointer aliasing, function calls).
+
+## Compilable Vector Addition in C
+
+The following complete C program demonstrates vector addition optimized for compiler vectorization:
+
+```c
+/* vector_add.c - Verifiable SIMD vector addition */
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define N 1000000
+
+/* Use __restrict__ to inform the compiler that pointers do not alias */
+void vec_add(const double * __restrict__ a, 
+             const double * __restrict__ b, 
+             double * __restrict__ c, 
+             int n) {
+    #pragma omp simd
+    for (int i = 0; i < n; i++) {
+        c[i] = a[i] + b[i];
+    }
+}
+
+int main(void) {
+    /* Allocate 64-byte aligned buffers for AVX-512 compatibility */
+    double *a = (double *)aligned_alloc(64, N * sizeof(double));
+    double *b = (double *)aligned_alloc(64, N * sizeof(double));
+    double *c = (double *)aligned_alloc(64, N * sizeof(double));
+
+    if (!a || !b || !c) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return 1;
+    }
+
+    for (int i = 0; i < N; i++) {
+        a[i] = 1.0;
+        b[i] = 2.0;
+    }
+
+    vec_add(a, b, c, N);
+
+    /* Verify correctness */
+    int correct = 1;
+    for (int i = 0; i < N; i++) {
+        if (c[i] != 3.0) {
+            correct = 0;
+            break;
+        }
+    }
+
+    printf("Vector Add completed: %s (c[0] = %.1f, c[N-1] = %.1f)\n", 
+           correct ? "SUCCESS" : "FAILURE", c[0], c[N-1]);
+
+    free(a);
+    free(b);
+    free(c);
+    return 0;
+}
+```
+
+### Compile and Run Commands
+```bash
+gcc -O3 -march=native -fopt-info-vec vector_add.c -o vector_add
+./vector_add
+```
+
+### Expected Output
+```text
+vector_add.c:13:5: optimized: loop vectorized using 32 byte vectors
+Vector Add completed: SUCCESS (c[0] = 3.0, c[N-1] = 3.0)
+```
+
+## Explicit Vectorisation with #pragma omp simd
+
+While `-O3` attempts heuristic vectorisation, the OpenMP standard provides `#pragma omp simd` to give the programmer direct control:
+- Informs the compiler that loop iterations are strictly data-independent.
+- Ignores potential pointer aliasing warnings.
+- Supports clauses such as `aligned(ptr: 64)` and `reduction(+: sum)`.
+
+## Analyzing GCC -fopt-info-vec Report
+
+When inspecting `-fopt-info-vec`:
+1. `loop vectorized using 32 byte vectors`: Confirms that GCC emitted 256-bit AVX instructions (processing 4 64-bit doubles per cycle).
+2. If GCC outputs `missed: couldn't vectorize loop: not enough data-refs`, check for:
+   - Function calls inside the loop body (e.g. `printf` or non-inlined math functions).
+   - Non-contiguous pointer references.
+   - Loop-carried data dependencies (e.g., $A[i] = A[i-1] + B[i]$).

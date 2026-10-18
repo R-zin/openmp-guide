@@ -1,4 +1,4 @@
-export type Technology = 'mpi' | 'openmp';
+export type Technology = 'mpi' | 'openmp' | 'networks' | 'vectors' | 'performance';
 
 export interface TocSection {
   id: string;
@@ -19,9 +19,11 @@ export interface TopicMeta {
 
 export type QuestionCategory = 
   | 'conceptual' 
+  | 'numeric-calculation'
   | 'output-prediction' 
   | 'find-the-bug' 
   | 'write-the-program' 
+  | 'compare-and-contrast'
   | 'complexity-analysis';
 
 export interface SolvedQuestion {
@@ -74,3 +76,27 @@ export interface MockExam {
   instructions: string[];
   tasks: MockExamTask[];
 }
+
+export interface TheoryQuestion {
+  id: string;
+  number: string;
+  part: 'Part C: Interconnection Networks' | 'Part D: Vector Processors' | 'Part E: Performance Tools';
+  marks: number;
+  question: string;
+  solution: string[];
+  markingRubric: { criterion: string; marks: number }[];
+}
+
+export interface TheoryExam {
+  id: string;
+  title: string;
+  totalMarks: number;
+  durationMinutes: number;
+  instructions: string[];
+  sections: {
+    title: string;
+    description: string;
+    questions: TheoryQuestion[];
+  }[];
+}
+

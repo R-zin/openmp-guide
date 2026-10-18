@@ -12,6 +12,13 @@ import { CannonStepper } from '@/components/interactive/CannonStepper';
 import { OpenMPScheduleVisualizer } from '@/components/interactive/OpenMPScheduleVisualizer';
 import { RaceConditionDemo } from '@/components/interactive/RaceConditionDemo';
 import { AmdahlCalculator } from '@/components/interactive/AmdahlCalculator';
+import { TopologyExplorer } from '@/components/interactive/TopologyExplorer';
+import { HypercubeRouter } from '@/components/interactive/HypercubeRouter';
+import { GrayCodeVisualizer } from '@/components/interactive/GrayCodeVisualizer';
+import { PipelineSimulator } from '@/components/interactive/PipelineSimulator';
+import { VectorLoopComparison } from '@/components/interactive/VectorLoopComparison';
+import { ProfilingTracingDemo } from '@/components/interactive/ProfilingTracingDemo';
+
 
 interface MdxRendererProps {
   content: string;
@@ -163,6 +170,37 @@ export function MdxRenderer({ content }: MdxRendererProps) {
       i++;
       continue;
     }
+    if (trimmedLine.includes('<TopologyExplorer />')) {
+      elements.push(<TopologyExplorer key={`topo-${keyIndex++}`} />);
+      i++;
+      continue;
+    }
+    if (trimmedLine.includes('<HypercubeRouter />')) {
+      elements.push(<HypercubeRouter key={`router-${keyIndex++}`} />);
+      i++;
+      continue;
+    }
+    if (trimmedLine.includes('<GrayCodeVisualizer />')) {
+      elements.push(<GrayCodeVisualizer key={`gray-${keyIndex++}`} />);
+      i++;
+      continue;
+    }
+    if (trimmedLine.includes('<PipelineSimulator />')) {
+      elements.push(<PipelineSimulator key={`pipe-${keyIndex++}`} />);
+      i++;
+      continue;
+    }
+    if (trimmedLine.includes('<VectorLoopComparison />')) {
+      elements.push(<VectorLoopComparison key={`vec-cmp-${keyIndex++}`} />);
+      i++;
+      continue;
+    }
+    if (trimmedLine.includes('<ProfilingTracingDemo />')) {
+      elements.push(<ProfilingTracingDemo key={`prof-trace-${keyIndex++}`} />);
+      i++;
+      continue;
+    }
+
 
     // 2. Diagram Tag: <Diagram type="..." caption="..." />
     if (trimmedLine.includes('<Diagram')) {

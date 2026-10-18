@@ -1,0 +1,63 @@
+---
+id: 02-performance-engineering-cycle
+slug: 02-performance-engineering-cycle
+technology: performance
+order: 2
+title: "The Performance Engineering Workflow"
+description: "The four iterative phases of HPC optimization: Measure, Analyse, Optimise, and Verify."
+readingTimeMinutes: 10
+sections:
+  - id: workflow-cycle
+    title: "The 4-Phase Optimization Cycle"
+    level: 2
+  - id: phase-1-measure
+    title: "Phase 1: Measure (Data Collection)"
+    level: 2
+  - id: phase-2-analyse
+    title: "Phase 2: Analyse (Locating Bottlenecks)"
+    level: 2
+  - id: phase-3-optimise
+    title: "Phase 3: Optimise (Targeted Transformations)"
+    level: 2
+  - id: phase-4-verify
+    title: "Phase 4: Verify (Correctness and Speedup Validation)"
+    level: 2
+---
+
+## The 4-Phase Optimization Cycle
+
+Performance optimization in High-Performance Computing is not guesswork or premature trial-and-error; it is a rigorous, hypothesis-driven engineering methodology structured as a continuous loop:
+
+<Diagram type="performance-workflow" caption="The four phases of the performance engineering workflow: Measure, Analyse, Optimise, Verify." />
+
+The four phases must be executed cyclically until performance and scalability targets are satisfied:
+
+## Phase 1: Measure (Data Collection)
+- **Objective**: Collect empirical runtime data without altering the fundamental behavior of the target application.
+- **Techniques**:
+  - Statistical sampling (using CPU hardware performance counters via `perf` or `gprof`).
+  - Source or compiler instrumentation (inserting measurement probes via Score-P or TAU).
+- **Deliverables**: Execution profiles (`.cubex`, `gmon.out`) and chronological event traces (`.otf2`).
+
+## Phase 2: Analyse (Locating Bottlenecks)
+- **Objective**: Process raw measurement data into actionable diagnostic insights.
+- **Techniques**:
+  - Identifying the "hotspot" functions consuming the largest fraction of exclusive wall-clock time.
+  - Analyzing call trees to trace which parent functions invoked the expensive kernels.
+  - Inspecting multi-rank timeline views (e.g. Vampir, Scalasca) to identify wait-states, load imbalances, and communication stalls.
+- **Rule of Thumb**: Focus only on the top 1 or 2 dominant bottlenecks (Pareto principle: 80% of execution time is spent in 20% of the code).
+
+## Phase 3: Optimise (Targeted Transformations)
+- **Objective**: Apply targeted code and algorithmic modifications to eliminate the identified bottleneck.
+- **Typical Remedies**:
+  - *Compute Bottleneck*: Apply SIMD vectorisation (`#pragma omp simd`), loop unrolling, or cache tiling/blocking.
+  - *Load Imbalance*: Change OpenMP scheduling from `static` to `dynamic` or `guided`; re-partition domain decomposition in MPI.
+  - *Communication Latency*: Replace blocking `MPI_Send`/`MPI_Recv` with non-blocking `MPI_Isend`/`MPI_Irecv` to overlap communication with computation; replace point-to-point loops with collective trees (`MPI_Reduce`).
+  - *False Sharing*: Pad data structures to 64-byte cache-line boundaries or accumulate into thread-local variables.
+
+## Phase 4: Verify (Correctness and Speedup Validation)
+- **Objective**: Confirm that the code produces bit-exact, mathematically correct results and delivers genuine speedup.
+- **Checks**:
+  - Run regression test suites to ensure numerical accuracy was not broken by compiler flags or reordering.
+  - Re-measure wall-clock execution time and calculate speedup and efficiency curves.
+  - Verify that eliminating one bottleneck did not shift the primary bottleneck elsewhere.

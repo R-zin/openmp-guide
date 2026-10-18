@@ -1,0 +1,77 @@
+---
+id: 08-performance-measures
+slug: 08-performance-measures
+technology: vectors
+order: 8
+title: "Performance Measures: MIPS, FLOPS, and Roofline Limits"
+description: "Evaluating vector performance, peak vs sustained FLOPS, arithmetic intensity, and vector limits."
+readingTimeMinutes: 12
+sections:
+  - id: mips-vs-flops
+    title: "MIPS vs. FLOPS in Vector Computing"
+    level: 2
+  - id: vector-advantages
+    title: "Architectural Vector Advantages"
+    level: 2
+  - id: performance-limitations
+    title: "Performance Limitations (Amdahl & Startup Overhead)"
+    level: 2
+  - id: arithmetic-intensity
+    title: "Memory Bandwidth and Arithmetic Intensity"
+    level: 2
+---
+
+## MIPS vs. FLOPS in Vector Computing
+
+In scalar computer evaluation, **MIPS (Million Instructions Per Second)** was historically used:
+
+$$
+\text{MIPS} = \frac{\text{Instruction Count}}{\text{Execution Time} \times 10^6} = \frac{f}{\text{CPI} \times 10^6}
+$$
+
+However, in vector computing, **MIPS is completely meaningless and misleading**:
+- A single vector instruction (`ADDV`) performs 64 arithmetic operations while counting as **only one machine instruction**.
+- A scalar processor executing 64 additions executes 600 instructions (yielding a high MIPS rating), whereas a vector processor executes 1 instruction (yielding a tiny MIPS rating) while completing the exact same math ten times faster!
+
+Consequently, scientific computing measures throughput exclusively in **FLOPS (Floating-Point Operations Per Second)**:
+
+$$
+\text{FLOPS} = \frac{\text{Floating-Point Operations Executed}}{\text{Execution Time (seconds)}}
+$$
+
+Units: **MFLOPS** ($10^6$), **GFLOPS** ($10^9$), **TFLOPS** ($10^{12}$), **PFLOPS** ($10^{15}$), and **EFLOPS** ($10^{18}$).
+
+## Architectural Vector Advantages
+
+1. **Massive Loop Overhead Elimination**: Replaces hundreds of branch tests, loop counter increments, and pointer updates with a single instruction issue.
+2. **Deterministic Memory Prefetching**: Memory controllers know the exact stride and sequence of addresses across 64 elements in advance, enabling optimal DRAM bank pre-charging.
+3. **No Dynamic Branch Mispredictions**: Conditional loop code uses vector masking, eliminating pipeline stalls from mispredicted branches.
+4. **Guaranteed Independent Parallelism**: The hardware pipeline runs at 100% capacity without needing complex hazard detection logic.
+
+## Performance Limitations (Amdahl & Startup Overhead)
+
+Vector supercomputers do not achieve ideal speedup across all applications due to three fundamental constraints:
+
+1. **Amdahl's Law on Scalar Fraction ($f_s$)**:
+   If an application spends a fraction $f_s$ of its operations in scalar code that cannot be vectorized, overall speedup is strictly capped:
+   $$
+   \text{Speedup} \le \frac{1}{f_s + \frac{1 - f_s}{\text{Speedup}_{vector}}} \le \frac{1}{f_s}
+   $$
+   Even with infinite vector speed, if 10% of code is scalar, maximum speedup cannot exceed $1 / 0.10 = 10x$!
+
+2. **Vector Startup Latency ($T_s$)**:
+   Filling the functional unit and memory pipelines requires an initial latency $k$. For very short vector lengths ($n \ll \text{MVL}$), startup overhead dominates, making vector execution slower than scalar code.
+
+3. **Memory Bandwidth Bottleneck**:
+   If the memory bus cannot sustain 2 words of input and 1 word of output per cycle per functional unit, the execution pipelines starve.
+
+## Memory Bandwidth and Arithmetic Intensity
+
+A vector kernel's performance is governed by its **Arithmetic Intensity** ($I$):
+
+$$
+I = \frac{\text{Floating-Point Operations (FLOPs)}}{\text{Bytes Transferred from Memory (Bytes)}}
+$$
+
+- Vector Addition ($C[i] = A[i] + B[i]$): Reads 16 bytes ($A, B$), writes 8 bytes ($C$), performs 1 FLOP. Arithmetic intensity $= 1 / 24 \approx 0.042 \text{ FLOP/Byte}$ (**Memory-bound**).
+- Matrix Multiply ($C = A \times B$): $2n^3$ FLOPs on $3n^2$ words. Arithmetic intensity $= O(n)$ (**Compute-bound**).

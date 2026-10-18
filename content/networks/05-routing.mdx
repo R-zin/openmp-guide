@@ -1,0 +1,119 @@
+---
+id: 05-routing
+slug: 05-routing
+technology: networks
+order: 5
+title: "Routing in Interconnection Networks"
+description: "Store-and-forward vs wormhole routing, and dimension-order E-cube routing in hypercubes with step-by-step worked traces."
+readingTimeMinutes: 14
+sections:
+  - id: routing-mechanisms
+    title: "Store-and-Forward vs. Wormhole Routing"
+    level: 2
+  - id: ecube-algorithm
+    title: "Dimension-Order (E-Cube) Algorithm"
+    level: 2
+  - id: worked-example-010-111
+    title: "Worked Slide Example: 010 to 111 (3-D)"
+    level: 2
+  - id: practice-example-0110-1011
+    title: "Practice Example: 0110 to 1011 (4-D)"
+    level: 2
+  - id: deadlock-freedom
+    title: "Deadlock-Freedom and Virtual Channels"
+    level: 2
+  - id: interactive-router
+    title: "Interactive E-Cube Router"
+    level: 2
+---
+
+## Store-and-Forward vs. Wormhole Routing
+
+When a message traverses intermediate nodes, two primary routing techniques are used:
+
+1. **Store-and-Forward Routing**:
+   - Each intermediate switch buffers the **entire packet** before forwarding it to the next link.
+   - Transmission time: $T = t_s + (t_w \times m) \times h$, where $h$ is the number of hops, $m$ is message length, $t_s$ is startup time, and $t_w$ is per-word transfer time.
+   - Latency depends strongly on the distance $h$.
+
+2. **Cut-Through and Wormhole Routing**:
+   - The message is broken into tiny flow control units (**flits**).
+   - As soon as the header flit arrives at a switch and its output port is determined, it is forwarded immediately without waiting for remaining data flits.
+   - The message "worms" its way through multiple links simultaneously.
+   - Transmission time: $T = t_s + t_w \times m + t_h \times h$. Since flit hop delay $t_h$ is very small, latency becomes virtually **independent of the number of hops** $h$!
+
+## Dimension-Order (E-Cube) Algorithm
+
+In a $d$-dimensional hypercube, **E-Cube routing** (also known as dimension-order routing) is a deterministic, minimal, deadlock-free routing algorithm:
+
+### Algorithm Procedure
+1. Let the source node binary address be $S = s_{d-1} s_{d-2} \dots s_0$.
+2. Let the destination node binary address be $D = d_{d-1} d_{d-2} \dots d_0$.
+3. Compute the **direction vector** by bitwise XOR:
+
+$$
+R = S \oplus D = r_{d-1} r_{d-2} \dots r_0
+$$
+
+4. Scan $R$ from the lowest-order bit (dimension 0) to the highest-order bit (dimension $d-1$).
+5. For each bit position $i$ where $r_i = 1$:
+   - Route the message across the physical link in dimension $i$.
+   - The node's $i$-th bit flips, aligning that coordinate with the destination.
+6. The total number of hops traversed is precisely equal to the **Hamming distance** $H(S, D)$ (the number of 1s in $R$).
+
+<Diagram type="ecube-routing" caption="Dimension-order E-cube path from node 010 to node 111." />
+
+## Worked Slide Example: 010 to 111 (3-D)
+
+- **Source**: $S = 010_2$
+- **Destination**: $D = 111_2$
+- **Step 1: Compute XOR**:
+  $$
+  R = 010_2 \oplus 111_2 = 101_2
+  $$
+  Bits set to 1 are bit 0 and bit 2. Bit 1 is 0.
+
+- **Step 2: Correct differing bits in monotonic order**:
+  1. **Hop 1 (correct bit 0)**:
+     - Current node: $010_2$.
+     - Flip bit 0: $010_2 \to 011_2$.
+     - Intermediate node reached: **011** (traverse dimension 0).
+  2. **Hop 2 (correct bit 2)**:
+     - Current node: $011_2$.
+     - Flip bit 2: $011_2 \to 111_2$.
+     - Destination reached: **111** (traverse dimension 2).
+
+- **Total Hops**: 2 hops ($010 \to 011 \to 111$).
+
+## Practice Example: 0110 to 1011 (4-D)
+
+- **Source**: $S = 0110_2$
+- **Destination**: $D = 1011_2$
+- **Step 1: Compute XOR**:
+  $$
+  R = 0110_2 \oplus 1011_2 = 1101_2
+  $$
+  Bits set to 1 are at positions 0, 2, and 3. Bit 1 is 0.
+
+- **Step 2: Traverse dimensions in ascending order (0, 2, 3)**:
+  1. **Hop 1 (dimension 0)**:
+     - Current: $0110_2$. Flip bit 0 $\implies 0111_2$.
+  2. **Hop 2 (dimension 2)**:
+     - Current: $0111_2$. Flip bit 2 $\implies 0011_2$.
+  3. **Hop 3 (dimension 3)**:
+     - Current: $0011_2$. Flip bit 3 $\implies 1011_2$ (Destination!).
+
+- **Path**: $0110 \to 0111 \to 0011 \to 1011$. Total hops: 3.
+
+## Deadlock-Freedom and Virtual Channels
+
+A routing algorithm is **deadlock-free** if no cyclic dependencies can occur among message buffers:
+- In E-cube routing, channels are requested in strictly monotonic dimension order ($0, 1, 2, \dots, d-1$).
+- Because no channel in dimension $i$ can ever wait for a channel in dimension $j < i$, the channel dependency graph is a **Directed Acyclic Graph (DAG)**.
+- By Dally and Seitz's theorem, an acyclic channel dependency graph guarantees absolute freedom from deadlock!
+
+## Interactive E-Cube Router
+
+Step through any 3-D or 4-D routing path live with our interactive simulator:
+
+<HypercubeRouter />

@@ -1,0 +1,61 @@
+---
+id: 01-history-and-evolution
+slug: 01-history-and-evolution
+technology: vectors
+order: 1
+title: "History and Evolution of Vector Processors"
+description: "Chronological evolution from Cray-1 to Fujitsu A64FX, architectural breakthroughs, and high-performance applications."
+readingTimeMinutes: 14
+sections:
+  - id: supercomputing-origins
+    title: "Origins of Vector Supercomputers"
+    level: 2
+  - id: evolution-table
+    title: "Evolution Timeline (Cray-1 to Modern Era)"
+    level: 2
+  - id: application-domains
+    title: "Scientific and Engineering Applications"
+    level: 2
+  - id: watch-out-vector-widths
+    title: "Watch Out: Register Length vs Bit Width Ambiguity"
+    level: 2
+---
+
+## Origins of Vector Supercomputers
+
+In the 1970s and 1980s, standard scalar processors struggled to satisfy the immense numerical demands of scientific computing. Scientific workloads are characterized by large linear algebra operations (dense vectors and matrices).
+
+Seymour Cray pioneered the **Cray-1** (1976), introducing **vector register architecture**. Instead of executing scalar loops one element at a time through multiple instruction fetches, decodes, and register pointer increments, a single vector instruction orchestrated operations across dozens of data elements through deeply pipelined arithmetic execution units.
+
+## Evolution Timeline (Cray-1 to Modern Era)
+
+The table below traces the key milestones in vector architecture evolution:
+
+| Era / Year | Representative System | Vector Architecture Type | Key Innovations & Architectural Features |
+| :--- | :--- | :--- | :--- |
+| **1974** | **ILLIAC IV** | SIMD Array Processor | 64 separate 64-bit PEs operating synchronously in lock-step under a single control unit. |
+| **1976** | **Cray-1** | Pipelined Vector Registers | 8 vector registers (64 elements $\times$ 64 bits), 80 MHz clock, vector chaining, 160 MFLOPS peak. |
+| **1981** | **CDC Cyber 205** | Memory-to-Memory Vector | Streamed vectors directly from main memory without intermediate vector registers; high memory bandwidth. |
+| **1990s** | **NEC SX-3 / SX-4** | Multi-pipe Vector SMP | Multiple parallel vector pipelines per CPU; dominated global meteorological centers. |
+| **2002** | **Earth Simulator (NEC SX-6)** | Distributed Vector Supercomputer | 640 nodes (5,120 vector processors), 40 TFLOPS peak; #1 on TOP500 for global climate modeling. |
+| **2020** | **Fujitsu A64FX (Fugaku)** | Armv8.2-A SVE (512-bit SIMD) | Scalable Vector Extension (SVE), High-Bandwidth Memory (HBM2), powers the world-record Fugaku supercomputer. |
+| **Present** | **NEC SX-Aurora TSUBASA** | PCIe Vector Engine Card | Vector execution engine on a PCIe form factor; up to 3.07 TFLOPS FP64 per card with 1.53 TB/s memory bandwidth. |
+
+## Scientific and Engineering Applications
+
+Vector processors excel wherever the same arithmetic operation must be applied repeatedly across vast homogeneous datasets with zero data-dependent branching:
+1. **Numerical Weather Forecasting & Climate Modeling**: Finite-difference and spectral PDE solvers discretizing atmospheric grids into billions of grid cells.
+2. **Computational Fluid Dynamics (CFD)**: Simulating airflow over aircraft wings, turbulent flows in jet engines, and aerodynamic vehicle drag.
+3. **Seismic Processing & Geophysics**: Reverse time migration (RTM) analyzing terabytes of acoustic reflection data for petroleum and earthquake fault analysis.
+4. **Computational Chemistry & Molecular Dynamics**: Computing pairwise Coulomb and Van der Waals interactions across millions of atoms.
+5. **Deep Learning & Matrix Workloads**: Modern GPU Tensor Cores and CPU SIMD extensions borrow directly from vector register and chaining principles to accelerate matrix multiplications ($C = A \times B$).
+
+## Watch Out: Register Length vs Bit Width Ambiguity
+
+<Callout type="warning" title="Watch Out: Register Length vs Bit Width Ambiguity">
+Historical lecture slides and early computer architecture tables often cite vector register sizes as small numbers (e.g., "64", "128", "256") without units, labeling the column ambiguously as "width in bits".
+- In the **Cray-1 and VMIPS architectures**, a vector register holds **64 elements**, where each individual element is a **64-bit double-precision float**. Thus, the total physical capacity of each vector register is $64 \times 64 = 4096 \text{ bits}$ ($512 \text{ bytes}$)!
+- In contrast, modern commodity CPU SIMD registers (such as Intel SSE, AVX-2, and AVX-512) are named after their **aggregate bit width** (128-bit, 256-bit, and 512-bit registers, holding 2, 4, or 8 64-bit double-precision floats, respectively).
+
+**Exam Rule**: When asked about the Cray-1 or VMIPS vector register specifications in CSS 311, clearly state: **8 vector registers, each storing 64 elements of 64 bits each**.
+</Callout>

@@ -1,0 +1,50 @@
+---
+id: 02-why-vector-processing
+slug: 02-why-vector-processing
+technology: vectors
+order: 2
+title: "Why Vector Processing? Motivation and Bottlenecks"
+description: "Fundamental limitations of deep pipelines, ILP limits, cache thrashing, and energy efficiency advantages."
+readingTimeMinutes: 12
+sections:
+  - id: limits-of-deep-pipelines
+    title: "Limitations of Deep Pipelines"
+    level: 2
+  - id: limits-of-ilp
+    title: "Limits of Instruction-Level Parallelism (ILP)"
+    level: 2
+  - id: cache-locality-failure
+    title: "Failure of Cache Locality for Bulk Scientific Data"
+    level: 2
+  - id: energy-efficiency
+    title: "Energy Efficiency and Silicon Economy"
+    level: 2
+---
+
+## Limitations of Deep Pipelines
+
+In conventional scalar architectures, designers attempted to increase throughput by deepening CPU pipelines (e.g. 20 to 30 stages in the Pentium 4 era) to achieve higher clock frequencies. However, deep scalar pipelines encounter severe physical barriers:
+1. **Clock Rate Limits**: Beyond 3 to 4 GHz, power consumption and thermal dissipation increase exponentially ($P \propto C V^2 f$).
+2. **Branch Penalty**: Scientific code relies heavily on loops. In a 20-stage pipeline, a single branch misprediction flushes dozens of in-flight instructions, squandering valuable clock cycles.
+3. **Pipeline Latch Overhead**: As stage delay shrinks, the fixed clock skew and latch propagation overhead consume an increasing percentage of the total clock period.
+
+## Limits of Instruction-Level Parallelism (ILP)
+
+Superscalar processors attempt to extract parallelism dynamically at runtime by fetching, decoding, renaming, and scheduling multiple independent scalar instructions per cycle (out-of-order execution):
+- **Complex Dependency Checking**: Out-of-order logic requires reservation stations, reorder buffers (ROB), and large register alias tables. The hardware complexity and silicon area of associative hazard-checking logic scale as $O(w^2)$ where $w$ is issue width.
+- **Diminishing Returns**: Real-world scalar programs rarely possess more than 2 to 3 independent instructions per cycle due to true data dependencies (RAW) and control dependencies.
+
+## Failure of Cache Locality for Bulk Scientific Data
+
+Scalar processors rely heavily on caches (L1, L2, L3) to bridge the processor-memory speed gap. Caches depend on **temporal locality** (reusing the same address) and **spatial locality** (accessing nearby addresses):
+- In large-scale scientific simulations (e.g., streaming over a 10 GB 3-D mesh array), each array element is accessed only once or twice per time step.
+- The working set drastically exceeds cache size, causing constant cache line evictions, cache pollution, and high miss penalties.
+- Scalar load instructions stall the CPU execution pipeline waiting for DRAM latency.
+
+## Energy Efficiency and Silicon Economy
+
+Vector processing fundamentally solves these limitations by raising the level of abstraction from single data words to entire vectors:
+1. **Single Instruction Replaces a Loop**: One vector instruction expresses 64 or more independent operations. The CPU executes only **one fetch and one decode**, amortizing control overhead across all elements.
+2. **Guaranteed Independent Operations**: By ISA definition, elements within a vector instruction are mutually independent. The hardware needs no complex dynamic dependency checking or out-of-order scheduling logic.
+3. **Structured Memory Access**: Because vector loads declare an explicit stride (e.g. unit stride), the memory system can initiate bulk, interleaved pipelined memory requests directly from DRAM banks without cache overhead.
+4. **Energy Economy**: Eliminating loop branches, counter updates, and superscalar speculation saves tremendous amounts of power per computed floating-point operation.

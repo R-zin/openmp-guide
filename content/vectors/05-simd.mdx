@@ -1,0 +1,73 @@
+---
+id: 05-simd
+slug: 05-simd
+technology: vectors
+order: 5
+title: "SIMD Processing: Array Processors vs. Vector Processors"
+description: "Flynn's classification, SIMD in space (Array Processors) vs SIMD in time (Vector Processors), and trade-offs."
+readingTimeMinutes: 12
+sections:
+  - id: flynns-taxonomy
+    title: "Flynn's Classical Computer Architecture Taxonomy"
+    level: 2
+  - id: simd-models
+    title: "Two Paradigms of SIMD: Space vs. Time"
+    level: 2
+  - id: array-processors
+    title: "1. Array Processors (Parallelism in Space)"
+    level: 2
+  - id: vector-processors-simd
+    title: "2. Vector Processors (Parallelism in Time)"
+    level: 2
+  - id: space-vs-time-table
+    title: "Array vs. Vector Comparison Table"
+    level: 2
+---
+
+## Flynn's Classical Computer Architecture Taxonomy
+
+In 1966, Michael J. Flynn classified computer architectures into four categories based on the concurrency of instruction and data streams:
+
+1. **SISD (Single Instruction, Single Data)**: Conventional sequential von Neumann uniprocessor (e.g. early microprocessors).
+2. **SIMD (Single Instruction, Multiple Data)**: A single control unit broadcasts one machine instruction that executes simultaneously across multiple distinct data elements.
+3. **MISD (Multiple Instruction, Single Data)**: Multiple instructions operate concurrently on a single data stream (primarily systolic arrays and redundant fault-tolerant systems).
+4. **MIMD (Multiple Instruction, Multiple Data)**: Multiple independent processors asynchronously executing different programs on different data (e.g. multi-core CPUs, clusters running MPI).
+
+Vector computing belongs squarely to the **SIMD** class.
+
+## Two Paradigms of SIMD: Space vs. Time
+
+Within the SIMD classification, computer architects exploit data parallelism using two distinct physical methodologies:
+1. **Parallelism in Space**: Array Processors
+2. **Parallelism in Time**: Pipelined Vector Processors
+
+<Diagram type="simd-array-vs-vector" caption="Array Processor (SIMD in Space) vs Vector Processor (SIMD in Time)." />
+
+## 1. Array Processors (Parallelism in Space)
+
+An **Array Processor** consists of a single master Control Unit (CU) coupled to an array of $N$ identical, replicated Processing Elements (PEs):
+- Each PE has its own Arithmetic Logic Unit (ALU), working registers, and local memory.
+- The central Control Unit decodes the instruction stream and broadcasts the same operation to all $N$ PEs.
+- All $N$ PEs execute the operation **at the exact same instant in time (clock cycle)** on their local data words.
+- Inactive PEs can be masked out using an enable bit.
+- *Historical Milestone*: **ILLIAC IV** (64 PEs), Thinking Machines **CM-2** (Connection Machine).
+
+## 2. Vector Processors (Parallelism in Time)
+
+A **Vector Processor** operates through a small number of deeply pipelined, high-speed execution units rather than dozens of replicated ALUs:
+- A single vector instruction streams successive vector elements through the pipelined functional unit **in consecutive clock cycles**.
+- At any instant in time, different segments of the pipeline are operating on different elements of the vector array.
+- High throughput is achieved not by replicating ALUs across physical chip area, but by keeping the pipeline continuously full (producing 1 result per cycle).
+- *Historical Milestone*: **Cray-1**, **NEC SX Series**.
+
+## Array vs. Vector Comparison Table
+
+| Architectural Dimension | Array Processors (SIMD in Space) | Vector Processors (SIMD in Time) |
+| :--- | :--- | :--- |
+| **Execution Domain** | Space (replicated parallel PEs) | Time (pipelined arithmetic stages) |
+| **Hardware Repertoire** | $N$ complete physical ALUs | 1 (or few) deeply pipelined ALUs |
+| **Silicon Area** | High area spent duplicating logic | Compact area; high clock optimization |
+| **Clock Frequency** | Typically lower due to clock distribution | Very high due to simple, balanced stages |
+| **Data Routing** | Inter-PE communication mesh | High-bandwidth interleaved memory |
+| **Latency for Single Result** | 1 clock cycle (all PEs finish together) | $k$ cycles (filling pipeline latency) |
+| **Modern Manifestation** | GPU compute units, TPU systolic arrays | CPU AVX-512, ARM SVE, RISC-V Vector |
